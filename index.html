@@ -8,53 +8,73 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs" type="module"></script>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
-      <h1>ML Academy</h1>
-      <p class="subtitle">Corso interattivo</p>
+      <a href="#/home" class="brand-link">
+        <h1>ML Academy</h1>
+        <p class="subtitle">Corso interattivo</p>
+      </a>
     </div>
-    <div id="progress-summary">
-      <div class="progress-bar"><div id="progress-fill"></div></div>
-      <div class="progress-text"><span id="progress-count">0</span> / <span id="progress-total">0</span> lezioni</div>
+
+    <div class="streak-box">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-info">
+        <div class="streak-count" id="streak-count">0</div>
+        <div class="streak-label">giorni di fila</div>
+      </div>
+      <div class="streak-xp" id="streak-xp" title="XP totali">0 XP</div>
     </div>
+
+    <div id="search-box">
+      <input type="search" id="global-search" placeholder="Cerca nel corso..." />
+    </div>
+
+    <nav class="main-nav">
+      <a href="#/home" class="nav-item" data-route="home"><span class="nav-icon">🏠</span> Home</a>
+      <a href="#/roadmap" class="nav-item" data-route="roadmap"><span class="nav-icon">🗺️</span> Roadmap</a>
+      <a href="#/library" class="nav-item" data-route="library"><span class="nav-icon">📚</span> Libreria PDF</a>
+      <a href="#/glossary" class="nav-item" data-route="glossary"><span class="nav-icon">📖</span> Glossario</a>
+      <a href="#/cheatsheet" class="nav-item" data-route="cheatsheet"><span class="nav-icon">📄</span> Cheat sheet</a>
+      <a href="#/stats" class="nav-item" data-route="stats"><span class="nav-icon">📊</span> Statistiche</a>
+    </nav>
+
+    <div class="section-label">Lezioni</div>
     <nav id="lesson-list"></nav>
+
     <div class="sidebar-footer">
-      <button id="reset-progress" title="Azzera i progressi salvati">Reset progressi</button>
       <div id="pyodide-status">Python: <span id="pyodide-state">non caricato</span></div>
+      <button id="reset-all" title="Azzera tutto (progressi, note, streak)">Reset dati</button>
     </div>
   </aside>
 
   <main id="content">
-    <header id="lesson-header">
-      <div class="breadcrumb"><span id="lesson-index"></span></div>
-      <h2 id="lesson-title">Benvenuto</h2>
-      <p id="lesson-summary"></p>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="teoria">Teoria</button>
-        <button class="tab-btn" data-tab="esempi">Esempi</button>
-        <button class="tab-btn" data-tab="esercizi">Esercizi</button>
-        <button class="tab-btn" data-tab="test">Test finale</button>
-      </div>
-    </header>
-
-    <section id="tab-teoria" class="tab-panel active"></section>
-    <section id="tab-esempi" class="tab-panel"></section>
-    <section id="tab-esercizi" class="tab-panel"></section>
-    <section id="tab-test" class="tab-panel"></section>
-
-    <footer id="lesson-nav">
-      <button id="prev-lesson">&larr; Lezione precedente</button>
-      <button id="mark-complete">Segna come completata</button>
-      <button id="next-lesson">Prossima lezione &rarr;</button>
-    </footer>
+    <div id="page-container"></div>
   </main>
 </div>
 
-<script src="lessons.js"></script>
+<script src="glossary.js"></script>
+<script src="lessons/index.js"></script>
+<script src="lessons/01-intro.js"></script>
+<script src="lessons/02-math.js"></script>
+<script src="lessons/03-numpy-pandas.js"></script>
+<script src="lessons/04-eda.js"></script>
+<script src="lessons/05-linear-regression.js"></script>
+<script src="lessons/06-logistic.js"></script>
+<script src="lessons/07-knn.js"></script>
+<script src="lessons/08-trees.js"></script>
+<script src="lessons/09-svm.js"></script>
+<script src="lessons/10-eval.js"></script>
+<script src="lessons/11-kmeans.js"></script>
+<script src="lessons/12-pca.js"></script>
+<script src="lessons/13-neural-nets.js"></script>
+<script src="lessons/14-project.js"></script>
+<script src="cheatsheets.js"></script>
+<script src="pdf-library.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
