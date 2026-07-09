@@ -281,6 +281,115 @@ ct = ColumnTransformer([
     ('num', num_pipe, num_cols),
     ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols),
 ])</pre>`
+  },
+  {
+    title: 'Reti neurali — parametri e training',
+    body: `
+<h4>Struttura MLP</h4>
+<div class="formula">$h^{(l)} = \phi(W^{(l)} h^{(l-1)} + b^{(l)})$</div>
+<h4>Attivazioni</h4>
+<ul>
+<li>ReLU: default hidden</li>
+<li>Sigmoid: output binaria</li>
+<li>Softmax: output multi-classe</li>
+</ul>
+<h4>Ottimizzatori</h4>
+<ul>
+<li>Adam(lr=1e-3): default</li>
+<li>SGD + momentum: quando serve generalizzare bene</li>
+<li>AdamW: Adam con weight decay corretto (Transformer)</li>
+</ul>
+<h4>Diagnosi problemi</h4>
+<ul>
+<li>Loss NaN/diverge: lr troppo alto</li>
+<li>Loss stagna: lr troppo basso, dead ReLU, inizializzazione</li>
+<li>Train ok, val no: overfit -> aggiungi dropout, weight decay, data augmentation</li>
+<li>Nessuna scende: capacità insufficiente, o bug</li>
+</ul>
+<pre class="code">from sklearn.neural_network import MLPClassifier
+m = MLPClassifier(
+    hidden_layer_sizes=(256, 128, 64),
+    activation='relu', solver='adam',
+    learning_rate_init=1e-3, alpha=1e-4,
+    early_stopping=True, validation_fraction=0.1,
+    max_iter=500, random_state=0
+)</pre>`
+  },
+  {
+    title: 'CNN — cheat sheet',
+    body: `
+<h4>Convolution output size</h4>
+<div class="formula">$\lfloor (H + 2p - k)/s \rfloor + 1$</div>
+<p>con H=input, k=kernel, p=padding, s=stride.</p>
+<h4>Architettura tipica</h4>
+<pre class="code">Conv 3x3 -> BatchNorm -> ReLU -> [Conv 3x3 -> BatchNorm -> ReLU]xN -> MaxPool 2x2
+(ripeti N volte con canali crescenti)
+Flatten -> Dropout -> Linear -> Output</pre>
+<h4>Transfer learning</h4>
+<pre class="code">import torchvision.models as models
+model = models.resnet18(weights='DEFAULT')
+model.fc = nn.Linear(model.fc.in_features, num_classes)
+# Fine-tune con lr=1e-4 per feature layer, lr=1e-3 per fc</pre>
+<h4>Data augmentation</h4>
+RandomHorizontalFlip, RandomCrop, RandomRotation, ColorJitter, MixUp, CutMix.`
+  },
+  {
+    title: 'MLOps essentials',
+    body: `
+<h4>Experiment tracking (MLflow)</h4>
+<pre class="code">import mlflow
+with mlflow.start_run():
+    mlflow.log_param('lr', 0.05)
+    mlflow.log_metric('roc_auc', auc)
+    mlflow.sklearn.log_model(model, 'model')</pre>
+<h4>Serving (FastAPI)</h4>
+<pre class="code">from fastapi import FastAPI
+from pydantic import BaseModel
+app = FastAPI()
+class Input(BaseModel):
+    features: list[float]
+@app.post('/predict')
+def predict(inp: Input):
+    return {'prob': float(model.predict_proba([inp.features])[0, 1])}</pre>
+<h4>Docker</h4>
+<pre class="code">FROM python:3.11-slim
+COPY requirements.txt app.py model.joblib ./
+RUN pip install -r requirements.txt
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0"]</pre>
+<h4>Drift monitoring</h4>
+<ul>
+<li>KS test per feature: p < 0.05 = drift significativo</li>
+<li>PSI: < 0.1 stabile, 0.1-0.2 lieve, > 0.2 severo</li>
+<li>Distribuzione dei score del modello nel tempo</li>
+</ul>`
+  },
+  {
+    title: 'Imbalanced classification — checklist',
+    body: `
+<h4>Metriche</h4>
+<ul>
+<li><b>PR-AUC</b> (average_precision): la più informativa con sbilanciamento severo</li>
+<li>Recall @ precision fissa: risposta business diretta</li>
+<li>Cost-based total = FN*C_FN + FP*C_FP</li>
+<li>MCC: robusto allo sbilanciamento, tra -1 e 1</li>
+</ul>
+<h4>Threshold ottimale cost-sensitive</h4>
+<div class="formula">$t^* = C_{FP}/(C_{FP} + C_{FN})$</div>
+<h4>Tecniche</h4>
+<ol>
+<li><b>class_weight="balanced"</b> o sample_weight calibrati -> quasi sempre sufficiente</li>
+<li>SMOTE (dentro Pipeline!): solo se class_weight non basta</li>
+<li>Threshold tuning: cruciale per costo asimmetrico</li>
+<li>Ensemble bilanciati (BalancedRandomForest da imblearn)</li>
+</ol>
+<h4>Non fare mai</h4>
+<ul>
+<li>Bilanciare il test set (falsa la stima)</li>
+<li>SMOTE prima dello split</li>
+<li>Usare threshold 0.5 di default</li>
+<li>Guardare solo accuracy</li>
+</ul>`
   }
+
 
 ];
