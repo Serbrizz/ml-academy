@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f1220" />
+<link rel="manifest" href="manifest.json" />
 <title>ML Academy — Corso interattivo di Machine Learning</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
@@ -12,6 +14,8 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<button id="mobile-menu-toggle" aria-label="Menu" title="Menu">☰</button>
+<div id="sidebar-overlay"></div>
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
@@ -47,6 +51,17 @@
     <nav id="lesson-list"></nav>
 
     <div class="sidebar-footer">
+      <div class="mode-toggle-row">
+        <label class="mode-toggle" title="Modalità mobile: layout ottimizzato per smartphone">
+          <input type="checkbox" id="mobile-mode-toggle" />
+          <span class="mode-slider"></span>
+          <span class="mode-label">Modalità mobile</span>
+        </label>
+      </div>
+      <label class="readonly-toggle" title="Nasconde gli editor di codice, mostra solo teoria ed esempi renderizzati">
+        <input type="checkbox" id="readonly-toggle" />
+        <span>Sola lettura (nasconde editor)</span>
+      </label>
       <div id="pyodide-status">Python: <span id="pyodide-state">non caricato</span></div>
       <button id="reset-all" title="Azzera tutto (progressi, note, streak)">Reset dati</button>
     </div>

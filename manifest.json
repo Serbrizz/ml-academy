@@ -1,0 +1,25 @@
+{
+  "name": "ML Academy",
+  "short_name": "ML Academy",
+  "description": "Corso interattivo di Machine Learning con esercizi Python nel browser",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1220",
+  "theme_color": "#0f1220",
+  "orientation": "any",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%230f1220'/><text x='96' y='120' font-size='90' text-anchor='middle' fill='%237c5cff' font-family='sans-serif' font-weight='bold'>ML</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230f1220'/><text x='256' y='320' font-size='240' text-anchor='middle' fill='%237c5cff' font-family='sans-serif' font-weight='bold'>ML</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

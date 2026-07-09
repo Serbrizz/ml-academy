@@ -146,85 +146,244 @@ code.inline { background: var(--panel); padding: 2px 6px; border-radius: 4px; fo
 .run-btn:hover { background: #6b4bff; }
 .run-btn:disabled { background: var(--panel-2); color: var(--muted); cursor: not-allowed; }
 .reset-btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-.check-btn { background: var(--accent-2); color: #082c25; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
-.check-btn:hover { background: #37bfad; }
-.saved-badge { color: var(--muted); font-size: 11px; margin-left: auto; }
-.code-output { margin-top: 10px; background: #0a0c17; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; color: #cfd4ea; min-height: 20px; max-height: 400px; overflow-y: auto; }
-.code-output.error { border-color: var(--danger); color: #ffb3b3; }
-.code-output.success { border-color: var(--success); }
-.output-image { max-width: 100%; margin-top: 8px; border-radius: 6px; }
+.check-btn { background: var(--accent-2); color: #082c25; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font
+/* ============================================================
+   MODE TOGGLES - modalità mobile attivabile a mano
+   ============================================================ */
 
-/* Quiz */
-.quiz-question { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 20px 0; }
-.quiz-question .q-text { font-weight: 500; margin-bottom: 12px; }
-.quiz-options { display: flex; flex-direction: column; gap: 8px; }
-.quiz-option { padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
-.quiz-option:hover { background: #262b52; }
-.quiz-option.selected { border-color: var(--accent); background: rgba(124,92,255,0.1); }
-.quiz-option.correct { border-color: var(--success); background: rgba(85,209,135,0.12); }
-.quiz-option.wrong { border-color: var(--danger); background: rgba(255,107,107,0.12); }
-.quiz-feedback { margin-top: 10px; font-size: 13px; padding: 8px 12px; border-radius: 6px; display: none; }
-.quiz-feedback.visible { display: block; }
-.quiz-feedback.correct { background: rgba(85,209,135,0.12); color: var(--success); }
-.quiz-feedback.wrong { background: rgba(255,107,107,0.12); color: var(--danger); }
+/* Hamburger button - nascosto di default (visibile solo in mobile mode) */
+#mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+#mobile-menu-toggle:active { background: var(--panel-2); }
 
-/* Notes area */
-.notes-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 24px 0; }
-.notes-panel h4 { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-.notes-textarea { width: 100%; min-height: 120px; background: var(--code-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-family: inherit; font-size: 13px; line-height: 1.5; resize: vertical; }
-.notes-textarea:focus { outline: none; border-color: var(--accent); }
-.notes-toolbar { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-.notes-save-status { font-size: 11px; color: var(--muted); }
-.notes-export { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-.notes-export:hover { background: #262b52; }
+/* Overlay per chiudere sidebar tappando fuori */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 998;
+}
 
-/* Nav */
-#lesson-nav { display: flex; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
-#lesson-nav button { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-#lesson-nav button:hover:not(:disabled) { background: #262b52; }
-#lesson-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
-#mark-complete { margin-left: auto; background: var(--accent) !important; border-color: var(--accent) !important; color: white !important; }
-#mark-complete.done { background: var(--success) !important; border-color: var(--success) !important; color: #0b3320 !important; }
+/* Toggle switch nella sidebar */
+.mode-toggle-row { margin-bottom: 10px; }
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text);
+}
+.mode-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.mode-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.mode-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.mode-toggle input:checked + .mode-slider { background: var(--accent); }
+.mode-toggle input:checked + .mode-slider::before {
+  transform: translateX(16px);
+  background: white;
+}
+.readonly-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+.readonly-toggle input { cursor: pointer; }
 
-/* Glossary */
-.glossary-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-.glossary-item { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-.glossary-term { font-weight: 600; color: var(--accent-2); margin-bottom: 4px; }
-.glossary-def { font-size: 13px; color: var(--muted); line-height: 1.5; }
+/* ============================================================
+   MOBILE MODE - attiva quando body ha class="mobile-mode"
+   ============================================================ */
 
-.glossary-tooltip { display: inline-block; color: var(--accent-2); border-bottom: 1px dotted var(--accent-2); cursor: help; }
+body.mobile-mode #mobile-menu-toggle { display: block; }
 
-/* PDF library */
-.pdf-drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; margin: 20px 0; transition: border-color 0.2s, background 0.2s; }
-.pdf-drop-zone.dragover { border-color: var(--accent); background: rgba(124,92,255,0.05); }
-.pdf-drop-zone p { margin: 8px 0; color: var(--muted); }
-.pdf-drop-zone .drop-icon { font-size: 40px; }
-.pdf-list { margin-top: 20px; }
-.pdf-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
-.pdf-item:hover { border-color: var(--accent-2); }
-.pdf-icon { font-size: 26px; }
-.pdf-info { flex: 1; }
-.pdf-name { font-weight: 500; }
-.pdf-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.pdf-actions { display: flex; gap: 8px; }
-.pdf-actions button { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-.pdf-actions button:hover { background: #262b52; }
-.pdf-actions .del-btn:hover { background: rgba(255,107,107,0.2); border-color: var(--danger); color: var(--danger); }
+body.mobile-mode #app {
+  grid-template-columns: 1fr;
+}
 
-.pdf-viewer { margin-top: 20px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-.pdf-viewer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.pdf-viewer-title { flex: 1; font-weight: 500; }
-.pdf-viewer canvas { max-width: 100%; background: white; margin: 4px auto; display: block; border-radius: 4px; }
-.pdf-page-nav { display: flex; align-items: center; gap: 8px; }
-.pdf-page-nav button { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-.pdf-page-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
+body.mobile-mode #sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 85%;
+  max-width: 320px;
+  height: 100vh;
+  z-index: 999;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+}
 
-/* Cheat sheet */
-.cheatsheet-page { max-width: 900px; }
-.cheatsheet-section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin-bottom: 16px; page-break-inside: avoid; }
-.cheatsheet-section h3 { margin-top: 0; color: var(--accent-2); }
-.cheatsheet-section .formula { background: var(--code-bg); padding: 10px 14px; border-radius: 6px; margin: 8px 0; overflow-x: auto; }
-.print-btn { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
+body.mobile-mode.sidebar-open #sidebar {
+  transform: translateX(0);
+}
+body.mobile-mode.sidebar-open #sidebar-overlay {
+  display: block;
+}
+
+body.mobile-mode #content {
+  padding: 60px 16px 60px;
+  max-width: 100%;
+}
+
+body.mobile-mode #lesson-title { font-size: 22px; }
+body.mobile-mode .tab-panel h3 { font-size: 18px; }
+body.mobile-mode .tab-panel h4 { font-size: 15px; }
+body.mobile-mode .tab-panel p, body.mobile-mode .tab-panel li { font-size: 15px; line-height: 1.6; }
+
+/* Editor più grande e touch-friendly */
+body.mobile-mode .code-editor {
+  min-height: 180px;
+  font-size: 14px;
+  padding: 12px;
+}
+body.mobile-mode .code-toolbar {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+body.mobile-mode .code-toolbar button {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 14px;
+  flex: 1 1 auto;
+  min-width: 90px;
+}
+body.mobile-mode .saved-badge { width: 100%; text-align: center; padding: 4px 0; }
+
+/* Bottone Tab per mobile (inserito da JS) */
+.tab-btn-mobile {
+  background: var(--panel-2);
+  color: var(--accent-2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-weight: bold;
+}
+
+/* Tabs delle lezioni scrollabili orizzontalmente in mobile */
+body.mobile-mode .tabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+body.mobile-mode .tab-btn {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+/* Home cards a colonna singola su mobile */
+body.mobile-mode .home-grid { grid-template-columns: 1fr; }
+body.mobile-mode .dashboard-row { grid-template-columns: 1fr; }
+body.mobile-mode .stats-grid { grid-template-columns: repeat(2, 1fr); }
+body.mobile-mode .contrib-graph { grid-template-columns: repeat(15, 16px); }
+body.mobile-mode .contrib-day { width: 16px; height: 16px; }
+
+/* Streak box più compatto */
+body.mobile-mode .streak-box { padding: 8px 12px; }
+
+/* Bottoni navigazione lezione impilati */
+body.mobile-mode #lesson-nav {
+  flex-direction: column;
+  gap: 8px;
+}
+body.mobile-mode #lesson-nav button {
+  width: 100%;
+  min-height: 46px;
+  font-size: 15px;
+}
+body.mobile-mode #mark-complete { margin-left: 0 !important; }
+
+/* Home cards touch friendly */
+body.mobile-mode .home-card { padding: 20px; }
+body.mobile-mode .home-card h3 { font-size: 17px; }
+
+/* Quiz options più grandi */
+body.mobile-mode .quiz-option {
+  padding: 14px;
+  font-size: 14px;
+  min-height: 48px;
+}
+
+/* PDF viewer più touch friendly */
+body.mobile-mode .pdf-viewer-header { flex-wrap: wrap; }
+body.mobile-mode .pdf-page-nav button { min-height: 40px; padding: 8px 12px; }
+
+/* Notes area più grande */
+body.mobile-mode .notes-textarea { min-height: 180px; font-size: 15px; }
+
+/* Global search più touch friendly */
+body.mobile-mode #global-search { min-height: 44px; font-size: 15px; }
+
+/* ============================================================
+   READ-ONLY MODE - nasconde gli editor di codice
+   ============================================================ */
+body.readonly-mode .code-runner .code-editor,
+body.readonly-mode .code-runner .code-toolbar {
+  display: none;
+}
+body.readonly-mode .exercise .reveal-btn { display: inline-block; }
+body.readonly-mode .code-runner::before {
+  content: "📖 Modalità sola lettura attiva. Disattiva l\'interruttore per scrivere codice.";
+  display: block;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+body.readonly-mode .code-runner .code-output { display: none; }
+ccent); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
 .print-btn:hover { background: #6b4bff; }
 
 @media print {

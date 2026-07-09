@@ -743,17 +743,78 @@ function router() {
   window.scrollTo(0, 0);
 }
 
+// ------------------------ Mode toggles ------------------------
+const MODE_KEY = 'ml_mode_v1';
+
+function loadModePrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(MODE_KEY)) || { mobile: false, readonly: false };
+  } catch { return { mobile: false, readonly: false }; }
+}
+function saveModePrefs(prefs) {
+  localStorage.setItem(MODE_KEY, JSON.stringify(prefs));
+}
+function applyMode(prefs) {
+  document.body.classList.toggle('mobile-mode', !!prefs.mobile);
+  document.body.classList.toggle('readonly-mode', !!prefs.readonly);
+}
+
+function openSidebar() { document.body.classList.add('sidebar-open'); }
+function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+
+// Inserisce un bottone "Tab" dentro ogni code toolbar in modalita mobile
+function ensureMobileTabButtons() {
+  if (!document.body.classList.contains('mobile-mode')) {
+    document.querySelectorAll('.tab-btn-mobile').forEach(b => b.remove());
+    return;
+  }
+  document.querySelectorAll('.code-toolbar').forEach(tb => {
+    if (tb.querySelector('.tab-btn-mobile')) return;
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn-mobile';
+    btn.textContent = 'Tab';
+    btn.type = 'button';
+    btn.title = 'Inserisci indentazione (4 spazi)';
+    btn.addEventListener('click', () => {
+      const ta = tb.parentElement.querySelector('.code-editor');
+      if (!ta) return;
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.substring(0, s) + '    ' + ta.value.substring(en);
+      ta.selectionStart = ta.selectionEnd = s + 4;
+      ta.focus();
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const badge = tb.querySelector('.saved-badge');
+    if (badge) tb.insertBefore(btn, badge); else tb.appendChild(btn);
+  });
+}
+
+const _codeObserver = new MutationObserver(() => ensureMobileTabButtons());
+
 document.addEventListener('DOMContentLoaded', () => {
+  const prefs = loadModePrefs();
+  applyMode(prefs);
+  const mobileToggle = document.getElementById('mobile-mode-toggle');
+  const readonlyToggle = document.getElementById('readonly-toggle');
+  if (mobileToggle) mobileToggle.checked = !!prefs.mobile;
+  if (readonlyToggle) readonlyToggle.checked = !!prefs.readonly;
+
   checkStreakOnLoad();
   renderSidebar();
   window.addEventListener('hashchange', router);
   router();
+  ensureMobileTabButtons();
+  const pageContainer = document.getElementById('page-container');
+  if (pageContainer) _codeObserver.observe(pageContainer, { childList: true, subtree: true });
+
   const search = document.getElementById('global-search');
   search.addEventListener('keydown', e => {
     if (e.key === 'Enter' && search.value.trim()) {
       location.hash = '#/search/' + encodeURIComponent(search.value.trim());
+      if (document.body.classList.contains('mobile-mode')) closeSidebar();
     }
   });
+
   document.getElementById('reset-all').addEventListener('click', () => {
     if (confirm('Cancellare TUTTI i dati: progressi, note, codice salvato, streak, PDF? Non e reversibile.')) {
       Object.values(STORAGE).forEach(k => localStorage.removeItem(k));
@@ -761,4 +822,41 @@ document.addEventListener('DOMContentLoaded', () => {
       else location.reload();
     }
   });
+
+  if (mobileToggle) {
+    mobileToggle.addEventListener('change', () => {
+      const p = loadModePrefs();
+      p.mobile = mobileToggle.checked;
+      saveModePrefs(p);
+      applyMode(p);
+      ensureMobileTabButtons();
+      if (!p.mobile) closeSidebar();
+    });
+  }
+  if (readonlyToggle) {
+    readonlyToggle.addEventListener('change', () => {
+      const p = loadModePrefs();
+      p.readonly = readonlyToggle.checked;
+      saveModePrefs(p);
+      applyMode(p);
+    });
+  }
+
+  const menuBtn = document.getElementById('mobile-menu-toggle');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (menuBtn) menuBtn.addEventListener('click', () => {
+    if (document.body.classList.contains('sidebar-open')) closeSidebar();
+    else openSidebar();
+  });
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  window.addEventListener('hashchange', () => {
+    if (document.body.classList.contains('mobile-mode')) closeSidebar();
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 });
