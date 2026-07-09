@@ -220,5 +220,67 @@ m = MLPClassifier(hidden_layer_sizes=(128, 64), activation='relu',
 </ol>
 <h4>Errori tipici</h4>
 Leakage, ignorare imbalance, non testare baseline, guardare test 100 volte.`
+  },
+  {
+    title: 'Gradient Boosting',
+    body: `
+<h4>L’idea</h4>
+Ensemble sequenziale: ogni albero impara i residui del precedente. Gradient descent nello spazio delle funzioni.
+<div class="formula">$F_M(x) = \sum_{m=1}^M \eta \cdot f_m(x)$</div>
+<h4>Iperparametri chiave (ordine di importanza)</h4>
+<ol>
+<li><b>learning_rate</b>: 0.03-0.1 tipico</li>
+<li><b>n_estimators / max_iter</b>: tanti (500-2000) + early stopping</li>
+<li><b>max_depth</b>: 3-8, di solito shallow</li>
+<li><b>min_samples_leaf</b>: 10-50</li>
+<li><b>subsample</b>: 0.7-1.0</li>
+</ol>
+<h4>Codice sklearn</h4>
+<pre class="code">from sklearn.ensemble import HistGradientBoostingRegressor
+m = HistGradientBoostingRegressor(
+    max_iter=1000, learning_rate=0.05,
+    max_depth=6, min_samples_leaf=20,
+    early_stopping=True, n_iter_no_change=30,
+    validation_fraction=0.15,
+    random_state=0
+).fit(X_tr, y_tr)</pre>
+<h4>Feature importance</h4>
+Sempre usare permutation_importance o SHAP, non le importanze native (biased).`
+  },
+  {
+    title: 'Feature Engineering',
+    body: `
+<h4>Encoding categoriche</h4>
+<ul>
+<li><b>One-hot</b>: pochi valori distinti, no ordine implicito</li>
+<li><b>Ordinal</b>: solo se c’è ordine naturale (small/medium/large)</li>
+<li><b>Target encoding</b>: alta cardinalità. USA out-of-fold + smoothing per evitare leakage</li>
+<li><b>Frequency</b>: quando la frequenza porta info</li>
+</ul>
+<h4>Time features</h4>
+Componenti (mese, ora, weekday), cicliche (sin/cos), lag, rolling stats, distanze temporali.
+<h4>Interazioni</h4>
+Modelli lineari non le catturano: creale esplicite. Trees le catturano ma beneficiano di espliciti.
+<h4>Missing values</h4>
+<ol>
+<li>Rimozione se pochi</li>
+<li>Imputazione mediana/moda</li>
+<li><b>+ Missing indicator</b>: preserva l’info che il dato mancava</li>
+<li>Model-based (KNN, iterativo) se sofisticato</li>
+</ol>
+<h4>Regola d’oro anti-leakage</h4>
+Tutto dentro Pipeline. Sempre.
+<pre class="code">from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+
+num_pipe = Pipeline([('imp', SimpleImputer(strategy='median')),
+                      ('s', StandardScaler())])
+ct = ColumnTransformer([
+    ('num', num_pipe, num_cols),
+    ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols),
+])</pre>`
   }
+
 ];
