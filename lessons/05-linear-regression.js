@@ -97,8 +97,73 @@ window.LESSONS.push({
 <li><strong>Variabile target vincolata</strong> (probabilità, conteggi, ecc.). Usa logistic (per probabilità) o Poisson regression (per conteggi).</li>
 <li><strong>Rumore non gaussiano con code pesanti</strong>. Considera regressioni robuste o quantile regression.</li>
 </ul>
+
+<h3>5.3b Pseudoinversa e decomposizione SVD</h3>
+<p>$X^+ = (X^TX)^{-1}X^T$ vale solo se $X$ ha rango pieno. Nel caso generale si usa la <strong>SVD</strong>: $X = U\\Sigma V^T$ con $U$, $V$ ortogonali e $\\Sigma$ diagonale con valori singolari $\\sigma_1 \\geq \\sigma_2 \\geq \\dots \\geq 0$. La pseudoinversa di Moore-Penrose è:</p>
+<p>$$X^+ = V\\Sigma^+ U^T$$</p>
+<p>dove $\\Sigma^+$ si ottiene invertendo solo i valori singolari non nulli: $\\Sigma^+_{ii} = 1/\\sigma_i$ se $\\sigma_i > 0$, altrimenti $0$. La soluzione OLS via SVD è $\\hat w = X^+ y$.</p>
+<ul>
+<li><strong>Stabilità numerica</strong>: valori singolari piccoli segnalano quasi-collinearità. Troncarli (threshold) equivale a Ridge implicita e riduce la varianza dei coefficienti.</li>
+<li><strong>Geometria</strong>: $U$ ruota nello spazio dei campioni, $V$ nello spazio delle feature, $\\Sigma$ scala lungo gli assi principali — gli stessi delle componenti principali (PCA).</li>
+<li><code class="inline">numpy.linalg.lstsq</code> usa internamente SVD: è la scelta robusta in produzione rispetto a <code class="inline">np.linalg.solve(X.T@X, X.T@y)</code>.</li>
+</ul>
+
+<h3>5.6b Multicollinearità e Variance Inflation Factor (VIF)</h3>
+<p>La multicollinearità gonfia la varianza dei coefficienti OLS senza necessariamente ridurre $R^2$. Il <strong>VIF</strong> la quantifica per ogni feature $j$:</p>
+<p>$$\\text{VIF}_j = \\frac{1}{1 - R^2_j}$$</p>
+<p>dove $R^2_j$ è il coefficiente di determinazione della regressione di $X_j$ sulle <em>altre</em> feature. Più $X_j$ è predicibile dalle altre, più $R^2_j \\to 1$ e $\\text{VIF}_j \\to \\infty$.</p>
+<ul>
+<li><strong>Soglie pratiche</strong>: VIF &gt; 5 è un segnale d'allerta; VIF &gt; 10 è grave — i coefficienti diventano numericamente inaffidabili.</li>
+<li><strong>Cause comuni</strong>: feature duplicate in scale diverse (peso in kg e in libbre), <em>dummy trap</em> (includere tutte le dummy senza base di riferimento), feature costruite l'una dall'altra.</li>
+<li><strong>Soluzioni</strong>: Ridge (stabilizza i coefficienti riducendone la varianza), PCA pre-processing (decorrelazione esplicita), rimozione manuale delle feature ridondanti.</li>
+</ul>
+<p>Nota: VIF alto non invalida le <em>predizioni</em>, ma rende i singoli coefficienti ininterpretabili come effetti causali.</p>
+
+<h3>5.8b R² aggiustato: perché conta davvero</h3>
+<p>Il $R^2$ grezzo <strong>aumenta sempre</strong> aggiungendo feature, anche se sono rumore puro: aggiungere un parametro in più dà sempre al modello più gradi di libertà per fittare i dati di training. L'<strong>adjusted $R^2$</strong> corregge questo artefatto:</p>
+<p>$$R^2_{\\text{adj}} = 1 - (1-R^2)\\frac{n-1}{n-p-1}$$</p>
+<p>dove $n$ è il numero di esempi e $p$ il numero di feature esclusa l'intercetta. Il fattore $\\frac{n-1}{n-p-1} > 1$ penalizza i modelli con molti parametri.</p>
+<ul>
+<li>Se una feature aggiunta è inutile, $R^2$ cresce di pochissimo ma $n-p-1$ scende di 1: $R^2_{\\text{adj}}$ può <strong>scendere</strong> — segnale che la feature non giustifica la sua complessità.</li>
+<li>Usa $R^2_{\\text{adj}}$ per confrontare modelli con <strong>numero diverso di feature</strong> sullo stesso dataset.</li>
+<li>Per confronti ancora più rigorosi, considera AIC ($= -2\\ell + 2p$) o BIC ($= -2\\ell + p\\log n$): penalizzano la complessità in modo più aggressivo e hanno basi teoriche nella selezione del modello.</li>
+</ul>
+
+<h3>5.12 Intervalli di confidenza vs intervalli di predizione</h3>
+<p>Data una nuova osservazione $x_0$, esistono due tipi di intervallo concettualmente diversi che vengono spesso confusi:</p>
+<p><strong>Intervallo di confidenza</strong> per $E[y|x_0]$ — incertezza sulla media condizionale:</p>
+<p>$$\\hat y_0 \\pm t_{\\alpha/2,\\, n-d-1} \\cdot \\hat\\sigma \\sqrt{x_0^T(X^TX)^{-1}x_0}$$</p>
+<p><strong>Intervallo di predizione</strong> per un singolo $y_0$ futuro — incertezza su un'osservazione concreta:</p>
+<p>$$\\hat y_0 \\pm t_{\\alpha/2,\\, n-d-1} \\cdot \\hat\\sigma \\sqrt{1 + x_0^T(X^TX)^{-1}x_0}$$</p>
+<p>Il termine $+1$ sotto radice aggiunge l'incertezza intrinseca del rumore $\\varepsilon_0 \\sim \\mathcal{N}(0, \\sigma^2)$: l'intervallo di predizione è <strong>sempre più largo</strong> di quello di confidenza.</p>
+<ul>
+<li><strong>Esempio pratico</strong>: stima del prezzo <em>medio</em> degli appartamenti in una zona &rarr; intervallo di confidenza. Stima del prezzo di uno <em>specifico</em> appartamento &rarr; intervallo di predizione.</li>
+<li>Entrambi si allargano per $x_0$ lontani dal centroide dei training data: il termine $x_0^T(X^TX)^{-1}x_0$ cresce con la distanza dall'origine dei dati — l'estrapolazione è intrinsecamente più incerta.</li>
+</ul>
+
+<h3>5.13 Regressione pesata (WLS) e eteroschedasticità</h3>
+<p>Quando la varianza degli errori non è costante (<strong>eteroschedasticità</strong>), OLS è non-biased ma inefficiente: non è più BLUE. Se si conosce $\\sigma_i^2 = \\text{Var}(\\varepsilon_i)$, la <strong>Weighted Least Squares (WLS)</strong> assegna pesi inversamente proporzionali alla varianza:</p>
+<p>$$\\hat w_{\\text{WLS}} = \\arg\\min_w \\sum_i w_i (y_i - w^T x_i)^2, \\quad w_i = \\frac{1}{\\sigma_i^2}$$</p>
+<p>La soluzione in forma chiusa è $(X^T W X)^{-1} X^T W y$ con $W = \\text{diag}(w_1, \\dots, w_n)$. In pratica equivale a moltiplicare ogni riga $i$ per $\\sqrt{w_i}$ e poi fare OLS sul sistema trasformato.</p>
+<ul>
+<li><strong>Quando usarla</strong>: misure con incertezze diverse (fisica sperimentale, sensori con precisione variabile), survey con pesi demografici, eteroschedasticità nota dalla struttura del problema (es. varianza cresce con il valore previsto).</li>
+<li><strong>Alternativa statistica</strong>: i <em>robust standard errors</em> (sandwich estimator di White) correggono gli SE senza modificare i coefficienti, utili quando la struttura di $\\sigma_i$ è sconosciuta.</li>
+<li>sklearn: <code class="inline">LinearRegression().fit(X, y, sample_weight=weights)</code> implementa WLS direttamente passando i pesi $w_i$ (non $1/\\sigma_i^2$, ma il comportamento è equivalente).</li>
+</ul>
+
+<h3>5.14 Regressione polinomiale come caso speciale di regressione lineare</h3>
+<p>Il modello $y = w_0 + w_1 x + w_2 x^2 + \\dots + w_k x^k$ è <strong>non lineare in $x$</strong> ma <strong>lineare nei parametri</strong> $w$. Basta costruire la matrice di feature aumentata (<em>feature augmentation</em>):</p>
+<p>$$X_{\\text{poly}} = \\left[1,\\; x,\\; x^2,\\; \\ldots,\\; x^k\\right] \\in \\mathbb{R}^{n \\times (k+1)}$$</p>
+<p>e applicare OLS standard su $X_{\\text{poly}}$. <strong>Tutto ciò che abbiamo visto si applica direttamente</strong>: equazioni normali, Ridge/Lasso, VIF, diagnostica dei residui, intervalli di predizione, WLS.</p>
+<ul>
+<li><strong>Generalizzazione</strong>: qualsiasi trasformazione delle feature ($\\log x$, $\\sin x$, $x_1 \\cdot x_2$, $|x|$, ecc.) che non dipenda da $w$ è una feature augmentation e rientra nel framework lineare — incluse le reti neurali al primo layer.</li>
+<li><strong>Crescita dimensionale</strong>: con $d$ feature originali e grado $k$, le feature polinomiali sono $\\binom{d+k}{k}$ (es. $d=10$, $k=2 \\Rightarrow 66$ feature). Senza regolarizzazione, l'overfitting è quasi garantito.</li>
+<li>sklearn: <code class="inline">PolynomialFeatures(degree=k)</code> + <code class="inline">LinearRegression()</code> in pipeline è il pattern standard; con Ridge al posto di OLS si controlla l'overfitting.</li>
+</ul>
 ` },
     { type: 'callout', variant: 'note', title: 'Analogia con la fisica', content: 'Il regolarizzatore L2 è formalmente identico all\'aggiunta di una massa/energia potenziale nella funzione di costo: penalizza deviazioni grandi dall\'origine. Il Lasso è come un potenziale con "spigoli" nell\'origine, che produce soluzioni ferme sull\'asse (sparsità).' },
+    { type: 'callout', variant: 'tip', title: 'Regola pratica: lstsq in produzione', content: 'Anche quando la matrice sembra invertibile, preferisci numpy.linalg.lstsq a np.linalg.solve(X.T@X, X.T@y). Il secondo fallisce silenziosamente con condizionamenti alti; il primo usa SVD ed è stabile per costruzione. sklearn lo fa già internamente — questo avviso vale per implementazioni custom.' },
+    { type: 'callout', variant: 'warn', title: 'Errore classico: CI vs PI in produzione', content: 'Confondere intervallo di confidenza e intervallo di predizione è uno degli errori più costosi in produzione. Se stai stimando il valore di un singolo elemento futuro (un cliente, un appartamento, un componente), devi usare l\'intervallo di predizione — sempre più largo. Usare il CI sottostima sistematicamente l\'incertezza reale e porta a decisioni overconfident.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: OLS da zero e confronto sklearn</h3>' },

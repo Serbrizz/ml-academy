@@ -188,6 +188,169 @@ jobs:
 <p>Problema: training e inference devono usare le STESSE feature calcolate nello stesso modo. Feature stores (Feast, Tecton, Databricks) centralizzano definizioni e computazione, prevenendo il "training-serving skew".</p>
 ` },
     { type: 'callout', variant: 'note', title: 'Realismo pratico', content: 'Il codice di questa lezione richiede installazione locale di FastAPI, MLflow, Docker. Non gira in Pyodide. Ma è codice reale che userai davvero in produzione: salvalo come reference, prova gli esempi in locale quando puoi. Anche solo scrivere un Dockerfile per il tuo modello sklearn è un enorme step avanti per un CV junior ML.' },
+    { type: 'md', content: `
+<h3>18.12 Model Registry e versioning</h3>
+<p>Un <strong>Model Registry</strong> è l'artifact store centralizzato per i modelli: in produzione non si punta mai a un file su disco, si punta a una versione nel registry. Ogni versione porta con sé metadati completi:</p>
+<ul>
+<li><strong>Metriche</strong>: AUC, RMSE, accuracy del run che l'ha prodotta.</li>
+<li><strong>Dataset hash</strong>: SHA del training set — riproducibilità garantita.</li>
+<li><strong>Git commit</strong>: il codice esatto (hash) che ha generato il modello.</li>
+<li><strong>Parametri</strong>: tutti gli hyperparameter e la pipeline config.</li>
+<li><strong>Timestamp e autore</strong>: chi ha fatto il deploy e quando.</li>
+</ul>
+<p>Le versioni attraversano <strong>stages</strong> ben definiti: <em>None → Staging → Production → Archived</em>. In produzione non gira mai "il file più recente" — gira la versione in stage <em>Production</em>. Il rollback è un click: promuovi la versione precedente a Production e archivi quella rotta. Zero downtime, audit trail completo.</p>
+<p>Tool principali: <strong>MLflow Model Registry</strong> (open-source, self-hosted), <strong>Vertex AI Model Registry</strong> (GCP), <strong>SageMaker Model Registry</strong> (AWS), <strong>Weights &amp; Biases Registry</strong> (cloud, gestito).</p>
+<pre class="code">import mlflow.sklearn
+
+# Training + registrazione automatica nel registry
+with mlflow.start_run():
+    # ... training ...
+    mlflow.sklearn.log_model(model, 'model',
+        registered_model_name='churn_predictor')
+
+# Gestione stages via MlflowClient
+client = mlflow.MlflowClient()
+
+# Promuovi versione 3 a Staging per test
+client.transition_model_version_stage(
+    name='churn_predictor', version=3, stage='Staging'
+)
+# Dopo validazione: promuovi a Production
+client.transition_model_version_stage(
+    name='churn_predictor', version=3, stage='Production'
+)
+
+# Rollback: riporta v2 in Production, archivia v3 difettosa
+client.transition_model_version_stage(
+    name='churn_predictor', version=3, stage='Archived'
+)
+client.transition_model_version_stage(
+    name='churn_predictor', version=2, stage='Production'
+)
+
+# Carica direttamente la versione Production (senza hardcodare il numero)
+model_uri = 'models:/churn_predictor/Production'
+loaded = mlflow.sklearn.load_model(model_uri)</pre>
+
+<h3>18.13 Deployment patterns: batch, real-time, streaming, shadow</h3>
+<p>Non esiste un unico modo di servire predizioni. La scelta dipende dai requisiti di latenza e dagli SLA di business:</p>
+<ul>
+<li><strong>Batch inference</strong>: job periodico (orario, giornaliero, settimanale). Input: file o tabella. Output: file o tabella con predizioni. Semplice, scalabile, economico — nessun server always-on. Latenza: minuti/ore. Esempio tipico: generare raccomandazioni notturne per tutti gli utenti, scoring del rischio creditizio mensile.</li>
+<li><strong>Real-time / online inference</strong>: API REST o gRPC, latenza ms–100ms. SLA tipici: p50 &lt; 20ms, p99 &lt; 200ms. Richiede infrastruttura dedicata always-on. Esempio: fraud detection su ogni transazione, search ranking, personalizzazione in-session.</li>
+<li><strong>Streaming inference</strong>: predizioni su event stream (Kafka, Kinesis, Pub/Sub). Il modello consuma eventi e produce predizioni in near-real-time senza un'API esplicita. Esempio: anomaly detection su log di sistema, predizioni su click-stream.</li>
+<li><strong>Shadow mode (dark launch)</strong>: il nuovo modello riceve le stesse richieste del vecchio ma le sue predizioni <em>non vengono mai servite</em> all'utente. Servono solo per confronto offline. Zero rischio per l'utente, validazione reale del comportamento del modello su traffico di produzione prima del go-live.</li>
+<li><strong>A/B testing</strong>: traffico splittato (es. 90/10 o 50/50). Le predizioni di entrambi i modelli vengono effettivamente servite. Si misura la KPI di business (conversione, churn, ricavo) — non solo la metrica ML — per stabilire il vincitore con significatività statistica. A/B test risponde alla domanda: "questo modello migliore su ROC AUC produce davvero più ricavi?"</li>
+</ul>
+
+<h3>18.14 Model Monitoring approfondito: drift e decay</h3>
+<p>Un modello che non viene monitorato degrada in silenzio. Tre fenomeni distinti:</p>
+<ul>
+<li><strong>Data drift</strong>: la distribuzione degli input X cambia rispetto al training. Il modello riceve dati mai visti. Cause: stagionalità, nuova campagna marketing, nuovo prodotto, cambiamento demografico.</li>
+<li><strong>Concept drift</strong>: la relazione X → y cambia. Gli input sembrano normali ma le predizioni diventano sbagliate. Causa: cambio di comportamento degli utenti, nuovo contesto di mercato, eventi esterni (es. COVID sui modelli di credito).</li>
+<li><strong>Performance decay</strong>: conseguenza pratica dei due precedenti. L'accuracy scende, il modello non serve più. Spesso invisibile senza monitoring attivo.</li>
+</ul>
+<p>Come rilevare il drift:</p>
+<ul>
+<li><strong>PSI (Population Stability Index)</strong> su ogni feature numerica: &lt; 0.1 stabile, 0.1–0.2 attenzione, &gt; 0.2 re-training urgente.</li>
+<li><strong>KS test</strong> (Kolmogorov–Smirnov): confronta la distribuzione cumulativa training vs produzione. p-value &lt; 0.05 → drift statisticamente significativo.</li>
+<li><strong>Chi-squared test</strong>: per feature categoriali. Stessa logica del KS ma per distribuzioni discrete.</li>
+<li><strong>Distribuzione delle predizioni</strong>: se il modello inizia a prevedere quasi sempre 0.98 o quasi sempre 0.02, qualcosa è cambiato — anche senza label ground truth.</li>
+<li><strong>Metrica target (con label ritardati)</strong>: quando arrivano i label reali (es. churn si sa dopo 30 giorni), calcola accuracy sul periodo e confronta con baseline. Questo rileva concept drift.</li>
+</ul>
+<p>Risposta automatica al drift: alert → root cause analysis → re-training su trigger (PSI &gt; soglia su &gt;20% delle feature) o su schedule fisso. Tool: <strong>Evidently AI</strong>, <strong>WhyLabs</strong>, <strong>Arize AI</strong>, <strong>Fiddler</strong>.</p>
+<pre class="code">import numpy as np
+from scipy.stats import ks_2samp
+
+def monitoring_report(X_train_ref, X_prod_current, feature_names, psi_threshold=0.2):
+    """Genera report di drift per ogni feature."""
+    from scipy.stats import ks_2samp
+
+    alerts = []
+    for i, fname in enumerate(feature_names):
+        ref = X_train_ref[:, i]
+        cur = X_prod_current[:, i]
+
+        # KS test
+        ks_stat, ks_pval = ks_2samp(ref, cur)
+
+        # PSI
+        bp = np.percentile(ref, np.linspace(0, 100, 11))
+        bp[0], bp[-1] = -np.inf, np.inf
+        ref_pct = np.clip(np.histogram(ref, bins=bp)[0] / len(ref), 1e-6, None)
+        cur_pct = np.clip(np.histogram(cur, bins=bp)[0] / len(cur), 1e-6, None)
+        psi_val = float(np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct)))
+
+        status = 'ALERT' if psi_val > psi_threshold else ('warn' if psi_val > 0.1 else 'ok')
+        if status != 'ok':
+            alerts.append({'feature': fname, 'psi': psi_val, 'ks_pval': ks_pval, 'status': status})
+
+    return alerts</pre>
+
+<h3>18.15 Feature Store: online/offline e point-in-time correctness</h3>
+<p>Problema core del ML in produzione: le feature calcolate al training devono essere <em>identiche</em> a quelle calcolate all'inference. Se ricalcoli "media acquisti ultimi 30 giorni" in due posti diversi — pipeline Python al training, microservizio Java al serving — il più piccolo disallineamento introduce <strong>training-serving skew</strong> silenzioso e difficilissimo da debuggare.</p>
+<p>Il <strong>Feature Store</strong> è il database condiviso di feature pre-calcolate. La feature pipeline è scritta una volta sola e alimenta sia training che serving. Architettura duale:</p>
+<ul>
+<li><strong>Offline store</strong>: batch, ottimizzato per training. Dati storici, alta latenza accettabile. Tecnologie: Parquet su S3/GCS, BigQuery, Hive, Delta Lake. Il punto critico è la <strong>point-in-time correctness</strong>: quando costruisci il dataset di training, ogni riga deve usare solo feature disponibili <em>in quel momento storico esatto</em> — nessuna informazione dal futuro deve trapelare (no temporal leakage).</li>
+<li><strong>Online store</strong>: bassa latenza per inference, &lt; 10ms per look-up. Contiene solo l'ultima snapshot delle feature per ogni entity (utente, prodotto, ecc.). Tecnologie: Redis, DynamoDB, Cassandra, Bigtable.</li>
+<li><strong>Feature pipeline</strong>: il codice che calcola le feature, scritto una volta sola, eseguito sia in batch (per offline store) che in streaming/real-time (per aggiornare online store).</li>
+</ul>
+<p>Benefici: eliminazione del training-serving skew, riuso delle feature tra team e modelli diversi, governance e documentazione centralizzata, riduzione dei tempi di onboarding di nuovi modelli. Tool: <strong>Feast</strong> (open-source, on-prem e cloud), <strong>Tecton</strong> (enterprise, managed), <strong>Databricks Feature Store</strong>, <strong>Vertex AI Feature Store</strong> (GCP).</p>
+
+<h3>18.16 CI/CD per ML: integration, training, delivery</h3>
+<p>ML aggiunge tre livelli di complessità rispetto al CI/CD tradizionale: bisogna testare il codice, i dati <em>e</em> il modello.</p>
+<p><strong>Continuous Integration (CI)</strong> — ad ogni push/PR:</p>
+<ul>
+<li>Test unitari sul codice di trasformazione dati (pytest, parametrize su edge cases e feature boundary).</li>
+<li><strong>Data validation</strong>: schema check (tipi attesi, range, cardinalità), distribuzione attesa (test statistici leggeri), no duplicati inattesi, no null in colonne obbligatorie. Tool: Pandera, Great Expectations.</li>
+<li><strong>Model regression test</strong>: dopo ogni modifica al codice di training, performance non scende sotto soglia su un test set fisso e frozen. Es. "AUC ≥ 0.85 sul test set v2024-01". Se scende, la PR viene bloccata.</li>
+</ul>
+<p><strong>Continuous Training (CT)</strong> — re-training automatico su trigger:</p>
+<ul>
+<li>Data drift rilevato: PSI &gt; 0.2 su più del 20% delle feature principali.</li>
+<li>Schedule temporale: settimanale, mensile — anche senza drift esplicito.</li>
+<li>Accumulo di nuovi label oltre soglia: "riaddestra quando hai &gt; 10.000 nuovi esempi etichettati".</li>
+<li>Degradazione performance: metrica target scende sotto soglia di allerta.</li>
+</ul>
+<p><strong>Continuous Delivery (CD)</strong> — pipeline di promozione:</p>
+<ol>
+<li>Nuovo modello trainato → entra in Staging nel registry.</li>
+<li>Test automatici: performance vs baseline, latenza p99, input/output schema compatibility.</li>
+<li>Se tutti i gate passano: promozione automatica a Production (<em>fully automated</em>) oppure notifica per approvazione umana (<em>human-in-the-loop</em>, obbligatorio per modelli ad alto rischio).</li>
+<li>Se fallisce: rollback automatico, alert al team, log completo del motivo.</li>
+</ol>
+<pre class="code"># .github/workflows/ml-ci.yml (estratto)
+# name: ML CI/CD
+# on: push
+# jobs:
+#   validate-data:
+#     - pip install pandera great_expectations
+#     - python -m pytest tests/test_data_schema.py
+#   train-and-test:
+#     - python train.py
+#     - python -m pytest tests/test_model_regression.py  # AUC >= soglia
+#   build-and-deploy:
+#     - docker build -t ml-api .
+#     - python promote_to_staging.py   # MLflow Registry
+#     - python run_smoke_tests.py      # latenza, schema, sanity
+#     - python promote_to_production.py  # se smoke tests ok</pre>
+
+<h3>18.17 Batch vs Real-time: decision framework</h3>
+<p>La scelta del deployment pattern è guidata dai requisiti di business, non da preferenze tecniche.</p>
+<ul>
+<li><strong>Batch</strong>: vantaggi — scalabile (elabora milioni di esempi in parallelo), economico (no server always-on, pay-per-use su cluster Spark/BigQuery), semplice da debuggare e rilanciare in caso di errore. Svantaggi — latenza alta: minuti, ore o giorni tra l'evento e la predizione disponibile.</li>
+<li><strong>Real-time</strong>: vantaggi — latenza ms–100ms, risposta immediata all'utente o al sistema. Svantaggi — complesso da operare, costoso (server always-on, auto-scaling), richiede SLA definiti, infrastruttura dedicata, monitoring continuo della latenza.</li>
+<li><strong>Ibrido (pre-compute + cache)</strong>: pre-calcola predizioni batch per i casi frequenti e le memorizza in un key-value store (Redis). Il serving è solo un look-up O(1) in pochi ms. Real-time solo per nuovi utenti o casi non pre-calcolati. Ottimo compromesso costo/latenza per sistemi di raccomandazione e personalizzazione.</li>
+</ul>
+<p>Le tre domande da fare prima di scegliere:</p>
+<ol>
+<li><em>Quanto spesso cambia il contesto?</em> — Ogni click (real-time), ogni ora (near-real-time batch), ogni giorno (batch notturno)?</li>
+<li><em>Quanto veloce deve essere la risposta?</em> — SLA: &lt; 100ms? &lt; 1s? &lt; 1h? Il business può aspettare?</li>
+<li><em>Qual è il costo di una risposta sbagliata o ritardata?</em> — Frode non rilevata in tempo reale (costo alto → real-time); raccomandazione di ieri invece di oggi (costo basso → batch).</li>
+</ol>
+<p>SLA tipici di riferimento per ML serving real-time: p50 &lt; 20ms, p95 &lt; 100ms, p99 &lt; 500ms. Batch job nightly: &lt; 1h. Near-real-time micro-batch: &lt; 5min.</p>
+` },
+    { type: 'callout', variant: 'tip', title: 'Registry prima di tutto', content: 'Regola pratica: la produzione non deve mai puntare a un file. Punta sempre a una versione nel model registry con stage "Production". Questo rende il rollback banale (cambi lo stage in 1 click), rende ogni deploy auditabile (sai esattamente quale commit, dataset hash e metriche hanno prodotto il modello attivo), e ti salva quando qualcuno sovrascrive accidentalmente model_latest.pkl. Anche un registry minimal fatto in casa (tabella SQL con nome/versione/path/metriche) è meglio di niente.' },
+    { type: 'callout', variant: 'warn', title: 'Drift silenzioso: il killer nascosto dei modelli', content: 'Il performance decay in produzione è spesso invisibile se non hai monitoring attivo. Il modello risponde tecnicamente senza errori, ma le predizioni diventano sempre meno accurate. Casi reali: modelli di credit scoring non retrained durante COVID (distribuzione degli input completamente cambiata in poche settimane); modelli NLP non aggiornati dopo un rebrand aziendale (il testo delle richieste cambia, il vocabolario non corrisponde). Regola minima operativa: calcola PSI sulle 5-10 feature principali ogni settimana, imposta un alert automatico se PSI > 0.2 su piu del 20% delle feature, e pianifica un re-training automatico su quel trigger.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: model persistence con joblib (Pyodide OK)</h3>' },

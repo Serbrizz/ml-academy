@@ -123,8 +123,64 @@ window.LESSONS.push({
 <li><strong>Model-based (SelectFromModel)</strong>: usa importanze di Random Forest o coefficienti Lasso.</li>
 <li><strong>RFE (Recursive Feature Elimination)</strong>: elimina iterativamente le meno importanti.</li>
 </ul>
+
+<h3>16.11 Target encoding con smoothing</h3>
+<p>Il target encoding standard stima la media di $y$ per categoria $c$: con pochi campioni la stima è instabile. Lo <strong>smoothing</strong> mescola la media locale con la media globale con peso proporzionale alla dimensione del gruppo:</p>
+<p>$$\\text{enc}(c) = \\lambda(c) \\cdot \\bar{y}_c + (1-\\lambda(c)) \\cdot \\bar{y}$$</p>
+<p>dove $\\lambda(c) = \\frac{n_c}{n_c + m}$ e $m$ è l\'iperparametro di smoothing (tipico $m = 300$).</p>
+<ul>
+<li>Se $n_c$ è grande: $\\lambda \\to 1$ → usa la media locale (stima affidabile).</li>
+<li>Se $n_c$ è piccolo: $\\lambda \\to 0$ → usa la media globale (shrinkage verso prior).</li>
+</ul>
+<p>Motivazione: evita l\'overfitting su categorie rare che potrebbero avere medie di $y$ molto rumorose. In sklearn: <code class="inline">TargetEncoder(smooth=\'auto\')</code> stima $m$ empiricamente con leave-one-out CV.</p>
+
+<h3>16.12 Out-of-fold encoding (OOF)</h3>
+<p>Nel target encoding naive, ogni campione contribuisce al calcolo della propria media di categoria → <strong>leakage</strong>: il modello "ricorda" $y$ tramite l\'encoding. La soluzione è l\'<strong>out-of-fold encoding</strong>:</p>
+<ol>
+<li>Dividi il training in $K$ fold.</li>
+<li>Per ogni fold $k$, calcola la media di $y$ per categoria usando <em>solo</em> i $K-1$ fold rimanenti.</li>
+<li>Applica quell\'encoding al fold $k$ escluso: ogni campione viene encodato senza vedere il proprio $y$.</li>
+<li><strong>Test set</strong>: calcola l\'encoding su <em>tutto</em> il training (non fold-by-fold), poi applica al test.</li>
+</ol>
+<p>Il risultato è un encoding leakage-free che mantiene tutta la potenza informativa del target encoding. In pratica si combina sempre con lo smoothing (sezione 16.11) per gestire le categorie rare.</p>
+
+<h3>16.13 Encoding circolare per feature temporali</h3>
+<p>Ora del giorno, giorno della settimana e mese sono <strong>variabili circolari</strong>: le 23:00 è vicina alle 0:00, domenica è vicina a lunedì. Un ordinale intero rompe questa struttura (la distanza 23→0 appare enorme al modello). Soluzione: <strong>codifica sin/cos</strong>:</p>
+<p>$$h_{\\sin} = \\sin\\!\\left(\\frac{2\\pi \\cdot x}{T}\\right), \\quad h_{\\cos} = \\cos\\!\\left(\\frac{2\\pi \\cdot x}{T}\\right)$$</p>
+<p>dove $T$ è il periodo ($T=24$ per le ore, $T=7$ per i giorni della settimana, $T=12$ per i mesi). Le due feature prodotte preservano la geometria circolare: punti vicini nel ciclo restano vicini nello spazio delle feature. Esempio: ora 23 → $\\sin(2\\pi \\cdot 23/24) \\approx \\sin(2\\pi \\cdot 0/24)$, quindi le coordinate sono quasi identiche all\'ora 0.</p>
+
+<h3>16.14 Alta cardinalità</h3>
+<p>Categoriche con migliaia di valori distinti (codici postali, user_id, product_id) rendono il one-hot encoding impraticabile: la dimensionalità esplode e la matrice è sparsissima. Strategie per l\'alta cardinalità:</p>
+<ul>
+<li><strong>Target encoding + smoothing</strong>: comprime in una singola colonna continua informativa (vedi 16.11). Ottimo per modelli tree-based.</li>
+<li><strong>Frequency encoding</strong>: sostituisce ogni categoria con il suo conteggio o frequenza relativa. Cattura la popolarità della categoria.</li>
+<li><strong>Hashing trick</strong>: mappa la categoria via hash function in $n$ bucket fissi (<code class="inline">sklearn.feature_extraction.FeatureHasher</code>). Scalabile a cardinalità arbitraria, possibili collisioni tra categorie diverse.</li>
+<li><strong>Embeddings</strong>: in reti neurali, mappa ogni categoria a un vettore denso di dimensione $d$ appreso end-to-end. Cattura similarità semantiche (prodotti simili → vettori vicini). Richiede dati abbondanti.</li>
+</ul>
+
+<h3>16.15 Feature crossing</h3>
+<p>Un modello lineare non cattura il fatto che "reddito alto + età giovane" ha un effetto <em>diverso</em> dai due contributi separati. La soluzione è creare <strong>interazioni esplicite</strong> come nuove feature:</p>
+<ul>
+<li>Prodotto continuo: $x_1 \\cdot x_2$ (es. età × reddito).</li>
+<li>Prodotto con soglie (dummy crossing): $\\mathbb{1}[x_1 > s_1] \\cdot \\mathbb{1}[x_2 > s_2]$.</li>
+<li>Automatico: <code class="inline">PolynomialFeatures(degree=2, interaction_only=True)</code> genera tutte le interazioni di ordine 2.</li>
+</ul>
+<p>Attenzione: con $d$ feature le interazioni di ordine 2 sono $O(d^2)$. Con $d=100$ si generano ~5000 nuove colonne. Usa domain knowledge o feature importance per selezionare solo quelle informative ed evitare overfitting e curse of dimensionality.</p>
+
+<h3>16.16 Population Stability Index (PSI)</h3>
+<p>In produzione le distribuzioni cambiano nel tempo (<strong>data drift</strong>). Il PSI misura quanto la distribuzione di una feature si è spostata rispetto al training, binning sia training che produzione in $n$ intervalli e confrontando le proporzioni:</p>
+<p>$$\\text{PSI} = \\sum_{i=1}^{n} (A_i - E_i) \\cdot \\ln\\frac{A_i}{E_i}$$</p>
+<p>dove $E_i$ è la proporzione attesa (training) e $A_i$ quella attuale (produzione) nel bin $i$. Soglie pratiche ampiamente usate in ambito bancario e assicurativo:</p>
+<ul>
+<li><strong>PSI &lt; 0.1</strong>: distribuzione stabile, nessuna azione.</li>
+<li><strong>0.1 ≤ PSI &lt; 0.2</strong>: leggero shift, monitorare attentamente.</li>
+<li><strong>PSI ≥ 0.2</strong>: shift significativo → rivalutare il modello o riallena.</li>
+</ul>
+<p>Calcola PSI su ogni feature ad alto impatto con cadenza regolare (settimanale o mensile). Il PSI segnala il drift <em>prima</em> che le metriche di business degradino visibilmente, permettendo un retraining proattivo.</p>
 ` },
     { type: 'callout', variant: 'tip', title: 'Regola pratica', content: 'Se dopo un\'ora di feature engineering non hai migliorato la validation di almeno un 1-2%, probabilmente stai lavorando sulle feature sbagliate. Fai un passo indietro, riguarda l\'EDA, e chiediti che pattern dovrebbe imparare il modello.' },
+    { type: 'callout', variant: 'warn', title: 'OOF encoding: attenzione al test set', content: 'Nell\'out-of-fold encoding il test set NON va trattato fold-by-fold: va encodato con le statistiche calcolate sull\'intero training set. Errore comune: applicare la logica OOF anche al test introducendo varianza artificiosa. Il test non ha fold propri — usa l\'encoding globale del training.' },
+    { type: 'callout', variant: 'tip', title: 'PSI in produzione', content: 'Automatizza un alert quando PSI > 0.2 su feature critiche del modello. Il PSI segnala il data drift prima che la business metric (AUC, RMSE) cali visibilmente: ti permette di riallena in modo proattivo invece di reagire a un degrado già avvenuto in produzione.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: encoding categoriche</h3>' },

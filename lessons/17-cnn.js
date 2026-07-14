@@ -95,6 +95,93 @@ window.LESSONS.push({
 <p>⚠️ <strong>PyTorch non è disponibile in Pyodide</strong> per limiti di dimensione. Il codice sotto lo esegui in locale con <code class="inline">pip install torch torchvision</code>. In questa lezione useremo NumPy per capire i concetti e sklearn/scipy per esempi eseguibili.</p>
 ` },
     { type: 'callout', variant: 'note', title: 'Setup PyTorch in locale', content: 'Sul tuo PC: <code>pip install torch torchvision</code> (~1GB per la versione CPU-only, molto di più per GPU). Se hai una GPU NVIDIA, installa la versione CUDA seguendo <a href="https://pytorch.org/get-started/locally/">pytorch.org</a>. Con Colab hai una GPU gratis.' },
+    { type: 'md', content: `
+<h3>17.10 Formula dimensione output convoluzione</h3>
+<p>Data una feature map $H \\times W$, dopo una conv con kernel $k$, stride $s$, padding $p$:</p>
+<p>$$H_{out} = \\left\\lfloor \\frac{H + 2p - k}{s} \\right\\rfloor + 1$$</p>
+<p>Stessa formula per la larghezza. Esempi con input $H = 32$:</p>
+<ul>
+<li><strong>Same padding</strong>: $k=3, p=1, s=1$ → $\\lfloor(32+2-3)/1\\rfloor+1 = 32$ (dimensione invariata)</li>
+<li><strong>Stride 2</strong>: $k=3, p=1, s=2$ → $\\lfloor(32+2-3)/2\\rfloor+1 = 16$ (dimezza)</li>
+<li><strong>Valid, stride 2</strong>: $k=5, p=0, s=2$ → $\\lfloor(32-5)/2\\rfloor+1 = 14$</li>
+</ul>
+<p><strong>Regola same padding</strong>: per kernel dispari $k$, il padding $p = (k-1)/2$ garantisce $H_{out} = H_{in}$ con $s=1$. Per kernel pari non esiste una soluzione intera — ecco perché si usano quasi sempre kernel dispari (1, 3, 5, 7).</p>
+
+<h3>17.11 Receptive Field</h3>
+<p>Il <em>receptive field</em> (RF) è la porzione dell'immagine originale che influenza una singola attivazione in un dato layer. Con $L$ strati conv di kernel $k$ e stride 1:</p>
+<p>$$RF = 1 + L \\cdot (k - 1)$$</p>
+<p>Esempi pratici:</p>
+<ul>
+<li>1 layer 3×3: RF = 3</li>
+<li>2 layer 3×3: RF = 5 (equivalente a una conv 5×5, ma con meno parametri: $2 \\cdot 9 = 18$ vs $25$)</li>
+<li>5 layer 3×3: RF = 11</li>
+</ul>
+<p>Con stride $s > 1$ al layer $l$, il RF cresce moltiplicativamente: un MaxPool 2×2 (stride 2) raddoppia il RF di tutti i layer successivi.</p>
+<p><strong>Questo motiva le architetture deep</strong>: i primi layer hanno RF piccolo → catturano feature locali (bordi, texture); i layer profondi hanno RF grande → catturano strutture globali (forme, oggetti interi). Usare due conv 3×3 invece di una 5×5 dà stesso RF, meno parametri, più non-linearità (due ReLU invece di una).</p>
+
+<h3>17.12 Batch Normalization nelle CNN</h3>
+<p>Nelle reti conv, BatchNorm normalizza <strong>per canale</strong>: media e varianza calcolate su (batch, H, W) per ogni canale $c$:</p>
+<p>$$\\hat{x}_c = \\frac{x_c - \\mu_c}{\\sqrt{\\sigma_c^2 + \\varepsilon}}, \\quad y_c = \\gamma_c \\hat{x}_c + \\beta_c$$</p>
+<p>I parametri $\\gamma_c$ (scala) e $\\beta_c$ (shift) sono appresi durante il training — solo $2C$ parametri in totale, molto pochi rispetto ai pesi.</p>
+<p><strong>Posizionamento moderno</strong>: <code class="inline">Conv → BN → ReLU</code>, non Conv → ReLU → BN. BN prima della non-linearità mantiene una distribuzione più stabile degli input a ReLU, evitando saturazione.</p>
+<p><strong>Alternative per batch piccoli</strong> (es. object detection con batch 2-4):</p>
+<ul>
+<li><strong>Group Normalization</strong>: divide i $C$ canali in $G$ gruppi (es. $G=32$) e normalizza dentro ogni gruppo. Non dipende dalla dimensione del batch — la scelta standard per detection e segmentation.</li>
+<li><strong>Layer Normalization</strong>: normalizza su tutti i canali per ogni singolo esempio. Standard nei Vision Transformers (ViT).</li>
+</ul>
+
+<h3>17.13 Global Average Pooling (GAP)</h3>
+<p>Il GAP sostituisce <code class="inline">Flatten → Dense</code>: invece di appiattire tutta la feature map, calcola la <strong>media spaziale</strong> di ogni canale:</p>
+<p>$$GAP_c = \\frac{1}{H \\cdot W} \\sum_{i=1}^{H} \\sum_{j=1}^{W} x_{c,i,j}$$</p>
+<p>Risultato: $(C, H, W) \\to (C,)$. Poi un singolo <code class="inline">Linear(C, num_classes)</code> fa la classificazione finale.</p>
+<p><strong>Vantaggi rispetto a Flatten + Dense:</strong></p>
+<ul>
+<li><strong>Invarianza alla dimensione dell'input</strong>: lo stesso modello addestrato su 224×224 accetta immagini di qualsiasi risoluzione in inference (reti fully-convolutional)</li>
+<li><strong>Drastica riduzione parametri</strong>: $7 \\times 7 \\times 512 \\to$ Dense(10) = 25.6M pesi; GAP(512) $\\to$ Dense(10) = soli 5.1K pesi</li>
+<li><strong>Meno overfitting</strong>: nessun layer denso enorme da regolarizzare con dropout</li>
+</ul>
+<p>Usato in ResNet, EfficientNet, MobileNet, e praticamente ogni architettura post-2015. Le fully-convolutional networks basate su GAP sono la norma nell'era moderna.</p>
+
+<h3>17.14 Depthwise Separable Convolutions</h3>
+<p>Una conv standard $K \\times K$, $C_{in} \\to C_{out}$ ha costo computazionale $K^2 \\cdot C_{in} \\cdot C_{out}$ per ogni posizione spaziale. La <strong>depthwise separable conv</strong> fattorizza in due step:</p>
+<ol>
+<li><strong>Depthwise conv</strong>: un kernel $K \\times K$ applicato <em>indipendentemente</em> a ciascuno dei $C_{in}$ canali (non combina canali tra loro). Costo: $K^2 \\cdot C_{in}$.</li>
+<li><strong>Pointwise conv</strong>: conv $1 \\times 1$ che ricombina i canali. Costo: $C_{in} \\cdot C_{out}$.</li>
+</ol>
+<p>Risparmio computazionale rispetto alla conv standard:</p>
+<p>$$\\frac{K^2 C_{in} + C_{in} C_{out}}{K^2 C_{in} C_{out}} = \\frac{1}{C_{out}} + \\frac{1}{K^2}$$</p>
+<p>Per $K=3$: $\\approx 1/9$, ovvero <strong>8-9× meno operazioni</strong>. Base di <strong>MobileNet</strong> (modelli per mobile/edge), <strong>Xception</strong>, e componenti di <strong>EfficientNet</strong>. La qualità rimane quasi identica a parità di parametri totali.</p>
+
+<h3>17.15 Strategie di fine-tuning</h3>
+<p>Tre approcci in ordine crescente di aggressività:</p>
+<ol>
+<li><strong>Feature extraction</strong> (freeze_all → train_head): congela tutti i pesi pre-addestrati (<code class="inline">requires_grad=False</code>), addestra solo il nuovo classificatore. Veloce (minuti), basso rischio di <em>catastrophic forgetting</em>. Ottimo se il dataset è simile a ImageNet.</li>
+<li><strong>Gradual unfreeze</strong>: sblocca i layer dall'ultimo al primo progressivamente (un blocco per volta), con LR molto piccolo per gli strati profondi. Tecnica popolarizzata da fastai — bilancia adattamento e conservazione delle feature.</li>
+<li><strong>Discriminative learning rates</strong>: LR diversi per ogni layer o gruppo — piccolo vicino all'input (feature generali già buone, non vuoi cambiarle), grande vicino all'output (classificatore da adattare). Tipicamente LR/10 per ogni strato verso l'input.</li>
+</ol>
+<p><strong>Regola pratica</strong>: dataset simile a ImageNet (fotografie naturali) → congela di più; dataset molto diverso (immagini medicali, satellitari, microscopia) → addestra più strati con LR piccolo (1e-4 o meno). Con pochissimi dati (&lt;500 esempi) usa quasi sempre solo feature extraction.</p>
+
+<h3>17.16 Mixed Precision Training (FP16)</h3>
+<p>Le GPU con Tensor Core (NVIDIA V100, A100, RTX 30xx/40xx) eseguono operazioni FP16 2-8× più velocemente di FP32. La <em>mixed precision</em> combina i punti di forza di entrambi:</p>
+<ul>
+<li><strong>FP32</strong>: copia master dei pesi, accumulatori nell'optimizer (necessario per stabilità numerica)</li>
+<li><strong>FP16</strong>: forward pass, backward pass, gradienti — metà memoria, molto più veloce</li>
+</ul>
+<p><strong>Gradient scaling</strong>: i gradienti in FP16 possono fare underflow a zero perché i valori assoluti sono troppo piccoli per la precisione FP16 (minimo $\approx 6 \\times 10^{-5}$). Soluzione: moltiplica la loss per un fattore di scala $s$ prima del backward, poi dividi prima dell'update dell'optimizer. PyTorch gestisce questo automaticamente con <code class="inline">GradScaler</code>:</p>
+<pre class="code">from torch.cuda.amp import autocast, GradScaler
+scaler = GradScaler()
+
+for x, y in loader:
+    optimizer.zero_grad()
+    with autocast():               # forward in FP16
+        loss = loss_fn(model(x), y)
+    scaler.scale(loss).backward()  # backward con gradient scaling
+    scaler.step(optimizer)         # unscale + clip + optimizer step
+    scaler.update()                # aggiusta scaling factor automaticamente</pre>
+<p>Risultato pratico: quasi zero perdita di accuracy, ~2× speedup, ~2× riduzione memoria GPU. Una delle ottimizzazioni con il miglior rapporto sforzo/beneficio.</p>
+` },
+    { type: 'callout', variant: 'tip', title: 'Calcolo rapido dimensioni CNN', content: 'Con same padding (p=(k-1)/2, s=1) la feature map mantiene H&times;W invariato. Stride 2 dimezza, MaxPool 2&times;2 dimezza. Con input 224&times;224: dopo 5 dimezzamenti &rarr; 224/32 = 7. Scrivi queste dimensioni <em>prima</em> di costruire il modello per evitare errori di shape nel codice. PyTorch mostra un errore oscuro se le dimensioni non tornano nel classificatore finale.' },
+    { type: 'callout', variant: 'warn', title: 'Fine-tuning: attenzione al catastrophic forgetting', content: 'Se usi un LR troppo alto durante il fine-tuning completo, i layer pre-addestrati perdono le feature imparate su ImageNet (catastrophic forgetting). Usa sempre LR basso per i layer profondi (1e-4 o meno). Se hai meno di 500 esempi, usa quasi sempre feature extraction pura (freeze tutto tranne l&apos;ultima head) per evitare overfitting drastico.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: convoluzione manuale su un\'immagine</h3>' },

@@ -105,6 +105,64 @@ window.LESSONS.push({
 <p>Il MLPClassifier di sklearn è didatticamente ok ma limitato: non ha GPU, tantissime opzioni moderne (batch norm, layer complessi, dropout controllabile) sono mancanti. Per fare deep learning vero si usa <strong>PyTorch</strong> (o TensorFlow/Keras). PyTorch non è installato in Pyodide, quindi in questa lezione useremo NumPy per capire i concetti e sklearn per esempi rapidi. Nella lezione 17 vediamo il codice PyTorch che poi eseguirai in locale.</p>
 ` },
     { type: 'callout', variant: 'tip', title: 'Consiglio pratico', content: 'Per la maggior parte dei problemi tabulari, un HistGradientBoosting ben tarato batte una rete neurale a meno di non avere milioni di righe. Le reti neurali dominano dove ci sono strutture (immagini, testo, audio, grafi) che i tree-based non catturano naturalmente.' },
+    { type: 'md', content: `
+<h3>13.13 Backpropagation: derivazione completa</h3>
+<p>Dato un MLP con $L$ layer, definiamo l'<strong>errore del layer $l$</strong> come la derivata della loss rispetto alla pre-attivazione:</p>
+<p>$$\\delta^{(l)} = \\frac{\\partial \\mathcal{L}}{\\partial z^{(l)}}$$</p>
+<p>La <strong>regola ricorsiva</strong> (chain rule applicata all'indietro) è:</p>
+<p>$$\\delta^{(l)} = \\left(W^{(l+1)T} \\delta^{(l+1)}\\right) \\odot \\phi'\\!\\left(z^{(l)}\\right)$$</p>
+<p>Si parte dal layer di output $l=L$ e si scende fino al primo layer. Il simbolo $\\odot$ indica il prodotto element-wise. Da $\\delta^{(l)}$ si ricavano immediatamente i gradienti di pesi e bias:</p>
+<p>$$\\frac{\\partial \\mathcal{L}}{\\partial W^{(l)}} = \\delta^{(l)}\\, (a^{(l-1)})^T, \\qquad \\frac{\\partial \\mathcal{L}}{\\partial b^{(l)}} = \\delta^{(l)}$$</p>
+<p><strong>Caso speciale: output layer con cross-entropy + softmax.</strong> La derivata combinata si semplifica in modo elegante:</p>
+<p>$$\\delta^{(L)} = \\hat{y} - y$$</p>
+<p>dove $\\hat{y}$ è il vettore di probabilità predette e $y$ è il one-hot della vera classe. Questo è il punto di partenza del backward pass; poi la regola ricorsiva propaga $\\delta$ verso i layer inferiori.</p>
+
+<h3>13.14 Inizializzazione dei pesi</h3>
+<p>Il problema è mantenere stabile la varianza del segnale attraverso molti layer. Con pesi iniziali <em>troppo grandi</em>, le attivazioni saturano (sigmoid/tanh) e i gradienti diventano ~0. Con pesi <em>troppo piccoli</em>, il segnale si attenua moltiplicandosi per $L$ layer e i gradienti svaniscono.</p>
+<ul>
+<li><strong>Glorot/Xavier</strong> (tanh, sigmoid): $W \\sim \\mathcal{N}\\!\\left(0,\\; \\frac{2}{n_{in}+n_{out}}\\right)$. Bilancia la varianza nel forward e nel backward pass simultaneamente.</li>
+<li><strong>He initialization</strong> (ReLU): $W \\sim \\mathcal{N}\\!\\left(0,\\; \\frac{2}{n_{in}}\\right)$. Usa $2/n_{in}$ invece di $1/n_{in}$ perché ReLU azzera in media metà degli output — raddoppiare la varianza compensa esattamente questa perdita.</li>
+<li><strong>Bias</strong>: sempre inizializzato a $0$. I bias non hanno il problema di simmetria dei pesi.</li>
+</ul>
+<p>L'effetto pratico: con He initialization la varianza dell'output di ogni layer resta confrontabile con quella dell'input anche su reti di 50+ layer. Senza inizializzazione corretta, il gradiente svanisce o esplode dopo pochi layer indipendentemente dall'attivazione scelta.</p>
+
+<h3>13.15 Batch Normalization</h3>
+<p>Dato un mini-batch $\\{x_1, \\ldots, x_m\\}$ (per ogni feature/canale), l'algoritmo BN esegue quattro passi:</p>
+<ol>
+<li>Media del batch: $\\mu_B = \\dfrac{1}{m}\\sum_{i=1}^m x_i$</li>
+<li>Varianza del batch: $\\sigma^2_B = \\dfrac{1}{m}\\sum_{i=1}^m (x_i - \\mu_B)^2$</li>
+<li>Normalizzazione: $\\hat{x}_i = \\dfrac{x_i - \\mu_B}{\\sqrt{\\sigma^2_B + \\varepsilon}}$ &nbsp;&nbsp;(con $\\varepsilon \\approx 10^{-5}$ per stabilità numerica)</li>
+<li>Rescale + shift con parametri <em>appresi</em>: $y_i = \\gamma\\, \\hat{x}_i + \\beta$</li>
+</ol>
+<p>$\\gamma$ e $\\beta$ sono parametri appresi via backprop — la rete può decidere di de-normalizzare se utile. Durante l'<strong>inferenza</strong>, $\\mu_B$ e $\\sigma^2_B$ vengono sostituite dalle <em>running statistics</em> (media mobile esponenziale) accumulate durante il training, così il comportamento al test non dipende dalla dimensione del batch.</p>
+<p><strong>Effetti principali:</strong> riduce l'<em>internal covariate shift</em> (la distribuzione degli input di ogni layer non si sposta drasticamente durante il training); permette learning rate più alti senza destabilizzare; ha un leggero effetto regolarizzante grazie al rumore introdotto dalla stima di $\\mu_B$ e $\\sigma^2_B$ su batch finiti. <strong>Posizionamento:</strong> convenzionalmente <em>pre-activation</em> (Linear → BN → ReLU), ma alcune architetture moderne preferiscono post-activation o Pre-Norm (come nei Transformer).</p>
+
+<h3>13.16 Dropout come ensemble implicito</h3>
+<p>Con probabilità di drop $p = 0.5$, ogni forward pass attiva un sottoinsieme casuale di neuroni. Con $n$ neuroni ci sono $2^n$ possibili sottoreti — durante il training si ottimizzano tutte in modo condiviso. Al test, usare tutti i neuroni è approssimativamente equivalente a fare la media delle predizioni di queste $2^n$ reti: questa è la connessione con il <em>model averaging degli ensemble</em>.</p>
+<p><strong>Inverted dropout</strong>: durante il training, gli output non azzerati vengono scalati per $1/(1-p)$. Questo garantisce che il valore atteso dell'output rimanga invariato, e al test non serve nessuna correzione — si usa la rete normale senza dropout.</p>
+<p>Il meccanismo previene il <em>co-adattamento</em>: i neuroni non possono dipendere strutturalmente da specifici altri neuroni, perché questi potrebbero essere assenti nel prossimo mini-batch. Questo forza la rete a imparare rappresentazioni più ridondanti e robuste.</p>
+<p><strong>Valori tipici di $p$:</strong> 0.5 per layer densi (fully connected); 0.1–0.2 per layer convoluzionali (le feature map sono già sparse e correlate spazialmente); ~0.1 per embedding layer nei Transformer; 0 se si usa Batch Normalization nello stesso blocco.</p>
+
+<h3>13.17 Teorema di Approssimazione Universale</h3>
+<p><strong>Enunciato</strong> (Cybenko 1989, Hornik 1991): per qualsiasi funzione continua $f$ su un compatto $K \\subset \\mathbb{R}^d$ e per qualsiasi $\\varepsilon > 0$, esiste un MLP con un solo hidden layer di $N$ neuroni con attivazione non polinomiale tale che:</p>
+<p>$$\\sup_{x \\in K} |\\hat{f}(x) - f(x)| < \\varepsilon$$</p>
+<p>Il teorema è un risultato di <strong>esistenza pura</strong>. Non è un risultato di praticabilità computazionale. In particolare:</p>
+<ul>
+<li><strong>Non dice quanti neuroni servono:</strong> $N$ può essere esponenziale nella dimensione $d$. Un singolo layer da un milione di neuroni esiste in teoria, ma è computazionalmente intrattabile.</li>
+<li><strong>Non dice che SGD trova quella rete:</strong> la rete esiste, ma l'ottimizzazione è non convessa e SGD non ha garanzie di convergerci.</li>
+<li><strong>Non implica buona generalizzazione:</strong> memorizzare il training set tecnicamente approssima una funzione, ma non aiuta sul test set.</li>
+</ul>
+<p>Il vantaggio reale della <em>profondità</em> non è nell'esistenza ma nell'efficienza: reti profonde approssimano molte funzioni rilevanti (gerarchie di feature, composizione di trasformazioni) con esponenzialmente meno parametri rispetto a reti larghe a un solo layer.</p>
+
+<h3>13.18 Gradient Clipping e Learning Rate Scheduling</h3>
+<p><strong>Gradient clipping:</strong> quando la norma del gradiente aggregato supera una soglia $c$, il vettore viene riscalato preservando la direzione:</p>
+<p>$$\\text{se } \\|g\\| > c, \\quad g \\leftarrow g \\cdot \\frac{c}{\\|g\\|}$$</p>
+<p>Questo limita la magnitudine del passo di aggiornamento senza ignorare la direzione. Essenziale per RNN (il gradiente si moltiplica per $T$ timestep e può esplodere); utile nei Transformer durante i primi step di training. Valori tipici: $c \\in [0.5, 5]$.</p>
+<p><strong>Cyclical Learning Rate</strong> (Smith 2017): il LR oscilla tra $\\eta_{min}$ e $\\eta_{max}$ in cicli. L'intuizione: un LR alto permette di uscire da selle e minimi locali stretti (che generalizzano male), un LR basso affina la convergenza. Il <em>LR range test</em> aumenta il LR linearmente e registra la loss — il range ottimale si trova dove la loss scende più velocemente prima di destabilizzarsi.</p>
+<p><strong>Warmup:</strong> il LR parte molto basso (es. $10^{-6}$) e cresce linearmente per i primi $k$ step (tipicamente 1–5% degli step totali), poi segue uno schedule (cosine annealing, step decay, constant). Critico per i Transformer: aggiornare con LR alto all'inizio, quando i pesi sono casuali e i gradienti rumorosi, destabilizza il training e produce NaN. Il warmup ammortizza questo shock iniziale.</p>
+` },
+    { type: 'callout', variant: 'warn', title: 'BN e Dropout interagiscono male', content: 'Batch Normalization e Dropout usati nello stesso layer si ostacolano: BN normalizza le distribuzioni di attivazione, ma Dropout introduce rumore moltiplicativo che disturba le running statistics accumulate durante il training, con degrado silenzioso al test. Nelle reti convoluzionali moderne si usa BN senza Dropout (o con p molto bassa). Nei Transformer si usa Layer Normalization (normalizza per campione, non per batch) insieme a Dropout, ma non BN standard.' },
+    { type: 'callout', variant: 'tip', title: 'Checklist primo training', content: '(1) Verifica che la loss scenda su 1 solo batch ripetuto — se non scende esiste un bug nel codice. (2) Usa He init + ReLU + Adam lr=1e-3 come baseline. (3) Monitora train e val loss insieme: se divergono, aggiungi regolarizzazione prima di qualsiasi altra modifica. (4) Solo dopo aver stabilizzato: dropout, weight decay, BN, lr scheduling. (5) Modifica architettura per ultima — aggiungere layer non risolve problemi di ottimizzazione.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: MLP con sklearn</h3>' },

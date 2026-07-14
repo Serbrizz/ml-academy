@@ -78,6 +78,77 @@ window.LESSONS.push({
 </ul>
 ` },
     { type: 'callout', variant: 'tip', title: 'Il progetto da portfolio', content: 'Un fraud detection ben fatto (con EDA, feature engineering, threshold cost-sensitive, interpretabilità, dashboard di monitoring) è UNO dei migliori progetti da mostrare in un colloquio ML entry-level. Copre praticamente tutte le competenze principali in un dominio con impatto business chiaro.' },
+    { type: 'md', content: `
+<h3>19.8 SMOTE: algoritmo dettagliato</h3>
+<p>SMOTE (Synthetic Minority Over-sampling Technique) genera esempi sintetici interpolando tra punti esistenti della classe rara. Per ogni punto $x_i$:</p>
+<ol>
+<li>Trova i $k$ vicini più vicini nella classe rara (default $k=5$).</li>
+<li>Scegli casualmente un vicino $x_{\\text{neighbor}}$.</li>
+<li>Genera: $x_{\\text{new}} = x_i + \\lambda \\cdot (x_{\\text{neighbor}} - x_i)$, con $\\lambda \\sim U(0,1)$.</li>
+</ol>
+<p>Il punto sintetico cade sul segmento tra $x_i$ e il vicino. L'interpolazione avviene nello spazio delle feature, non nel dominio fisico dei valori: le feature numeriche vengono interpolate linearmente, producendo valori verosimili ma mai osservati nel dataset reale.</p>
+<p><strong>Regola critica: applica SMOTE solo sul training set, MAI prima dello split.</strong> Se SMOTE viene applicato sull'intero dataset, i punti sintetici — derivati da osservazioni reali — finiscono sia nel train che nel test. Il modello ha già visto varianti di quei punti in training: le performance in validazione saranno sovrastimate (data leakage). Con <code class="inline">imblearn.pipeline.Pipeline</code> SMOTE viene automaticamente applicato solo al fold di training durante cross-validation.</p>
+<p>Varianti principali (libreria <code class="inline">imbalanced-learn</code>):</p>
+<ul>
+<li><strong>ADASYN</strong>: genera più punti sintetici nelle zone dove il classificatore sbaglia maggiormente, aumentando la densità della classe rara dove è più difficile separarla dalla maggioranza.</li>
+<li><strong>Borderline-SMOTE</strong>: genera solo esempi vicini al confine decisionale, dove la classificazione è più incerta e gli esempi sintetici sono più utili.</li>
+<li><strong>SMOTE-NC</strong>: gestisce feature miste (numeriche + categoriche), interpolando le numeriche e usando la moda dei vicini per le categoriche.</li>
+</ul>
+
+<h3>19.9 Costo ottimale e threshold business: derivazione completa</h3>
+<p>Il costo totale del sistema come funzione della soglia $\\tau$:</p>
+<p>$$\\text{Costo}(\\tau) = FP(\\tau) \\cdot C_{FP} + FN(\\tau) \\cdot C_{FN}$$</p>
+<p>La soglia ottimale minimizza il costo atteso:</p>
+<p>$$\\tau^* = \\arg\\min_{\\tau \\in [0,1]} \\left[ FP(\\tau) \\cdot C_{FP} + FN(\\tau) \\cdot C_{FN} \\right]$$</p>
+<p>Con $C_{FN}/C_{FP} = 100$: ogni frode non rilevata pesa 100 falsi allarmi. Abbassare $\\tau$ riduce FN (costosi) ma aumenta FP (economici). Il punto ottimo si trova empiricamente molto sotto 0.5 — spesso intorno al 5-15% — perché conviene bloccare anche a bassa probabilità di frode pur di non perdere quelle reali.</p>
+<p><strong>Cost-sensitive learning tramite class_weight</strong>: <code class="inline">class_weight={0: 1, 1: 100}</code> amplifica il gradiente per gli esempi positivi 100x durante il training. Il modello ottimizza già tenendo conto del rapporto di costi: la frontiera decisionale si sposta implicitamente verso il recall elevato. Questo è complementare al threshold tuning — class_weight agisce sul training, il threshold sull'inferenza. Usarli entrambi dà risultati migliori di ognuno da solo.</p>
+
+<h3>19.10 Temporal leakage nei dati finanziari</h3>
+<p>Il temporal leakage è il rischio più insidioso nei dati finanziari: non genera errori, non produce warning, ma causa performance eccellenti in validazione e pessime in produzione. È il motivo più comune di "il modello funzionava benissimo in sviluppo e non funziona in produzione".</p>
+<p>Avviene quando una feature usata al tempo $T$ è calcolata con informazioni disponibili solo dopo $T$. Esempi classici:</p>
+<ul>
+<li><strong>Saldo aggiornato post-transazione</strong>: il saldo del conto riflette già l'esito della transazione fraudolenta, non lo stato al momento della decisione.</li>
+<li><strong>Flag "cliente segnalato per frode"</strong>: deriva da chargeback che arrivano settimane dopo la transazione originale. Al momento T, questa informazione non esiste ancora.</li>
+<li><strong>Aggregati con window mal definita</strong>: "media importi ultimi 7 giorni" calcolata includendo la transazione corrente o transazioni successive a T.</li>
+<li><strong>Statistiche globali su tutto il dataset</strong>: z-score rispetto alla media del merchant calcolata su tutto il periodo storico, incluso il futuro rispetto alla transazione che si sta classificando.</li>
+</ul>
+<p><strong>Regola aurea</strong>: ogni feature alla transazione $T$ deve usare esclusivamente dati con timestamp strettamente precedente a $T$:</p>
+<p><em>feature(transazione T) = aggregato(eventi dello stesso utente con timestamp &lt; T)</em></p>
+<p><strong>Split temporale corretto</strong>: ordina sempre per timestamp prima dello split, non fare shuffle. Usa il periodo più recente come test (hold-out temporale). Il random split su dati temporali introduce leakage diretto: il modello "vede" pattern dal futuro durante il training e li memorizza come segnali predittivi.</p>
+
+<h3>19.11 Calcolo dei class weight: formula e pratica</h3>
+<p>Con <code class="inline">class_weight="balanced"</code>, sklearn calcola automaticamente:</p>
+<p>$$w_i = \\frac{n_{\\text{samples}}}{n_{\\text{classes}} \\cdot n_i}$$</p>
+<p>Esempio: 9900 negativi e 100 positivi (1% fraud rate) su 10000 campioni:</p>
+<ul>
+<li>$w_0 = 10000 / (2 \\cdot 9900) \\approx 0.505$</li>
+<li>$w_1 = 10000 / (2 \\cdot 100) = 50$</li>
+<li>Rapporto $w_1 / w_0 = 99$: ogni positivo contribuisce al gradiente quanto 99 negativi.</li>
+</ul>
+<p>Equivalente con <code class="inline">sample_weight</code>:</p>
+<p><code class="inline">w = np.where(y == 1, n_neg / n_pos, 1.0)</code></p>
+<p>Per allineare al costo business invece del bilanciamento statistico, usa <code class="inline">ratio = C_FN / C_FP</code> come peso della classe positiva: se la frode non rilevata costa 100x il falso allarme, usa ratio=100. Questo incorpora il costo direttamente nel training — non solo nella soglia di decisione al momento dell'inferenza.</p>
+<p><strong>Nota pratica</strong>: il bilanciamento perfetto (ratio = n_neg/n_pos) massimizza il recall ma può sacrificare troppa precision. Il ratio ottimale si trova di solito tra il bilanciamento statistico e il rapporto dei costi. Cerca con cross-validation sul validation set.</p>
+
+<h3>19.12 Population Stability Index (PSI) per il monitoring</h3>
+<p>Il PSI misura lo shift di distribuzione tra training (riferimento) e produzione (attuale), dividendo i valori in $N$ bin (tipicamente 10-20):</p>
+<p>$$\\text{PSI} = \\sum_{i=1}^{N} (\\text{Act}_i - \\text{Exp}_i) \\cdot \\ln\\!\\left(\\frac{\\text{Act}_i}{\\text{Exp}_i}\\right)$$</p>
+<p>$\\text{Exp}_i$ = proporzione nel training set per il bin $i$; $\\text{Act}_i$ = proporzione in produzione. Il PSI è simmetrico rispetto alla KL-divergence e penalizza sia aumenti che diminuzioni di densità in ogni bin.</p>
+<p>Soglie di interpretazione standard:</p>
+<ul>
+<li><strong>PSI &lt; 0.1</strong>: distribuzione stabile, nessuna azione necessaria.</li>
+<li><strong>0.1 ≤ PSI &lt; 0.25</strong>: cambiamento moderato, aumentare la frequenza di monitoraggio.</li>
+<li><strong>PSI ≥ 0.25</strong>: shift significativo, valutare retraining del modello.</li>
+</ul>
+<p>Calcola PSI su due livelli:</p>
+<ul>
+<li><strong>Score del modello</strong>: segnale diretto di degradazione — se la distribuzione degli score di probabilità cambia, il modello ha cambiato comportamento globale.</li>
+<li><strong>Feature chiave</strong> (importo, frequenza transazioni, ora del giorno): identifica quale input sta guidando il drift e permette di diagnosticare la causa.</li>
+</ul>
+<p>In produzione: calcola PSI su finestre rolling settimanali rispetto alla distribuzione di training. Imposta alert automatici su PSI ≥ 0.25 per score o feature critiche. Il PSI delle feature è utile anche per capire <em>perché</em> il modello degrada, non solo <em>che</em> degrada.</p>
+` },
+    { type: 'callout', variant: 'warn', title: 'Temporal leakage: il bug silenzioso', content: 'Il temporal leakage produce modelli con performance eccellenti in validazione e pessime in produzione. Non genera errori: il modello "sembra" funzionare perché usa informazioni dal futuro. Audit sistematico di tutte le feature con timestamp è obbligatorio prima del deploy su dati finanziari.' },
+    { type: 'callout', variant: 'tip', title: 'SMOTE: quando usarlo davvero', content: 'SMOTE raramente supera class_weight su GBM moderni. Usalo quando: il modello non supporta sample_weight, il training set è molto piccolo (meno di 500 esempi positivi), o vuoi aumentare la varianza della classe rara. Usa sempre imblearn.pipeline.Pipeline per garantire che SMOTE venga applicato solo al fold di training durante cross-validation.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: dataset simulato di fraud detection</h3>' },

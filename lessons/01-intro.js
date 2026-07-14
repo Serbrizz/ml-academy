@@ -7,13 +7,19 @@ window.LESSONS.push({
   "teoria": [
     {
       "type": "md",
-      "content": "\n<h3>1.1 Definizione operativa</h3>\n<p>Il machine learning è la disciplina che studia algoritmi capaci di <strong>migliorare le proprie prestazioni su un compito attraverso l'esperienza</strong>. La definizione classica di Tom Mitchell (1997) è quasi una formula: un programma apprende dall'esperienza $E$ rispetto a un compito $T$ misurato da $P$ se le prestazioni su $T$, misurate da $P$, migliorano con $E$.</p>\n<p>In termini fisici puoi pensarci così: non stai scrivendo l'equazione del moto a mano, stai facendo <em>fit di una funzione</em> a partire dai dati. La differenza rispetto al fit classico è che le funzioni che consideriamo hanno milioni di parametri e non hanno una struttura fisica imposta a priori.</p>\n\n<h3>1.2 Il paradigma: dai dati alla funzione</h3>\n<p>In programmazione tradizionale scrivi: <code class=\"inline\">regole + dati &rarr; risultati</code>. Nel machine learning inverti: <code class=\"inline\">dati + risultati &rarr; regole</code>. L'algoritmo di apprendimento è quindi un <em>meta-programma</em> che produce un programma (il modello) a partire da esempi.</p>\n\n<h3>1.3 I tre grandi paradigmi</h3>\n<p><strong>Apprendimento supervisionato.</strong> Hai coppie $(x_i, y_i)$ dove $x_i \\in \\mathbb{R}^d$ è un vettore di features e $y_i$ è l'etichetta. Vuoi imparare $f : \\mathbb{R}^d \\to \\mathcal{Y}$ tale che $f(x) \\approx y$ su nuovi dati. Se $\\mathcal{Y}$ è discreto è <em>classificazione</em>; se è continuo è <em>regressione</em>.</p>\n<p><strong>Apprendimento non supervisionato.</strong> Hai solo $x_i$, senza etichette. Vuoi scoprire struttura: cluster, direzioni principali di variabilità, anomalie.</p>\n<p><strong>Reinforcement learning.</strong> Un agente interagisce con un ambiente, osserva stati $s_t$, sceglie azioni $a_t$, riceve ricompense $r_t$. Vuoi imparare una policy $\\pi(a|s)$ che massimizza la ricompensa cumulativa attesa $\\mathbb{E}\\left[\\sum_t \\gamma^t r_t\\right]$.</p>\n\n<h3>1.4 Formalizzazione dell'apprendimento supervisionato</h3>\n<p>Assumiamo che i dati provengano da una distribuzione congiunta ignota $\\mathcal{D}$ su $\\mathcal{X} \\times \\mathcal{Y}$. Data una funzione di loss $\\ell(\\hat{y}, y)$, definiamo il <em>rischio atteso</em>:</p>\n<p>$$R(f) = \\mathbb{E}_{(x,y) \\sim \\mathcal{D}}\\left[\\ell(f(x), y)\\right]$$</p>\n<p>Non conosciamo $\\mathcal{D}$, quindi minimizziamo il <em>rischio empirico</em> su un training set $\\{(x_i, y_i)\\}_{i=1}^n$:</p>\n<p>$$\\hat{R}(f) = \\frac{1}{n}\\sum_{i=1}^n \\ell(f(x_i), y_i)$$</p>\n<p>Il grande tema del ML è: quando il minimo di $\\hat{R}$ è vicino al minimo di $R$? Questa è la questione della <em>generalizzazione</em>.</p>\n\n<h3>1.5 Terminologia essenziale</h3>\n<ul>\n<li><strong>Feature</strong> (o predittore, variabile indipendente): una componente di $x$.</li>\n<li><strong>Label</strong> (o target, variabile dipendente): $y$.</li>\n<li><strong>Modello</strong>: la funzione $f_\\theta$ parametrizzata da $\\theta$.</li>\n<li><strong>Training</strong>: il processo di trovare $\\theta$ ottimale.</li>\n<li><strong>Inference</strong>: usare il modello addestrato per fare previsioni.</li>\n<li><strong>Overfitting</strong>: il modello memorizza il training set ma non generalizza. $\\hat{R}$ piccolo, $R$ grande.</li>\n<li><strong>Underfitting</strong>: il modello è troppo semplice per catturare il pattern. Entrambi grandi.</li>\n</ul>\n"
+      "content": "\n<h3>1.1 Definizione operativa</h3>\n<p>Il machine learning è la disciplina che studia algoritmi capaci di <strong>migliorare le proprie prestazioni su un compito attraverso l'esperienza</strong>. La definizione classica di Tom Mitchell (1997) è quasi una formula: un programma apprende dall'esperienza $E$ rispetto a un compito $T$ misurato da $P$ se le prestazioni su $T$, misurate da $P$, migliorano con $E$.</p>\n<p>In termini fisici puoi pensarci così: non stai scrivendo l'equazione del moto a mano, stai facendo <em>fit di una funzione</em> a partire dai dati. La differenza rispetto al fit classico è che le funzioni che consideriamo hanno milioni di parametri e non hanno una struttura fisica imposta a priori.</p>\n\n<h3>1.2 Il paradigma: dai dati alla funzione</h3>\n<p>In programmazione tradizionale scrivi: <code class=\"inline\">regole + dati &rarr; risultati</code>. Nel machine learning inverti: <code class=\"inline\">dati + risultati &rarr; regole</code>. L'algoritmo di apprendimento è quindi un <em>meta-programma</em> che produce un programma (il modello) a partire da esempi.</p>\n\n<h3>1.3 I tre grandi paradigmi</h3>\n<p><strong>Apprendimento supervisionato.</strong> Hai coppie $(x_i, y_i)$ dove $x_i \\in \\mathbb{R}^d$ è un vettore di features e $y_i$ è l'etichetta. Vuoi imparare $f : \\mathbb{R}^d \\to \\mathcal{Y}$ tale che $f(x) \\approx y$ su nuovi dati. Il tipo di problema dipende da $\\mathcal{Y}$: se è continuo è <em>regressione</em>, se è discreto è <em>classificazione</em>.</p>\n<p><strong>Apprendimento non supervisionato.</strong> Hai solo $x_i$, senza etichette. Vuoi scoprire struttura latente: cluster, direzioni principali di variabilità, distribuzione dei dati, anomalie.</p>\n<p><strong>Reinforcement learning.</strong> Un agente interagisce con un ambiente, osserva stati $s_t$, sceglie azioni $a_t$, riceve ricompense $r_t$. Vuoi imparare una policy $\\pi(a|s)$ che massimizza la ricompensa cumulativa attesa $\\mathbb{E}\\left[\\sum_t \\gamma^t r_t\\right]$.</p>\n<p><strong>Semi-supervisionato e self-supervised.</strong> Nel semi-supervisionato hai molti dati non etichettati e pochi etichettati (etichettare è costoso). Nel self-supervised le etichette sono generate automaticamente dai dati stessi — es. predire la parola successiva in un testo: questa è la base dei Large Language Model.</p>\n\n<h3>1.4 Tassonomia del supervisionato: regressione e classificazione</h3>\n<p>La distinzione è fondamentale e ricorre in tutti gli esercizi. Dipende dallo spazio dei target $\\mathcal{Y}$.</p>\n\n<h4>Regressione &mdash; $\\mathcal{Y} \\subseteq \\mathbb{R}$ (o $\\mathbb{R}^k$)</h4>\n<ul>\n<li><strong>Regressione semplice</strong>: una sola feature $x \\in \\mathbb{R}$ &rarr; scalare. Es: superficie casa &rarr; prezzo.</li>\n<li><strong>Regressione multipla</strong>: vettore di feature $x \\in \\mathbb{R}^d$ &rarr; scalare. Es: età, reddito, anni di esperienza &rarr; stipendio.</li>\n<li><strong>Regressione multivariata</strong>: $x \\in \\mathbb{R}^d$ &rarr; vettore $y \\in \\mathbb{R}^k$. Es: input sensori &rarr; coordinate 3D del robot.</li>\n</ul>\n<p>La loss standard è l'errore quadratico medio (MSE): $\\ell(\\hat{y}, y) = (\\hat{y} - y)^2$. Varianti robuste: MAE $= |\\hat{y}-y|$, Huber (quadratica vicino a zero, lineare lontano).</p>\n\n<h4>Classificazione binaria &mdash; $\\mathcal{Y} = \\{0, 1\\}$</h4>\n<p>Esattamente due classi, una detta \"positiva\" (1) e una \"negativa\" (0). Esempi: spam/non-spam, tumore maligno/benigno, transazione fraudolenta/legittima.</p>\n<p>Il modello produce una probabilità $\\hat{p} = P(y=1|x) \\in [0,1]$, poi si applica una <strong>soglia</strong> $\\tau$ (default 0.5) per ottenere la classe: se $\\hat{p} \\geq \\tau$ &rarr; classe 1, altrimenti classe 0. La soglia <em>non</em> è appresa durante il training: è un iperparametro che si sceglie in base al costo relativo di falsi positivi e falsi negativi.</p>\n<p>La loss standard è la <em>binary cross-entropy</em>: $\\ell(\\hat{p}, y) = -[y \\log \\hat{p} + (1-y)\\log(1-\\hat{p})]$.</p>\n\n<h4>Classificazione multi-classe &mdash; $\\mathcal{Y} = \\{1, 2, \\ldots, K\\}$ con $K > 2$</h4>\n<p>$K$ classi <strong>mutualmente esclusive</strong>: ogni esempio appartiene a esattamente una classe. Esempi: riconoscere la cifra scritta a mano (0-9, $K=10$), classificare un articolo di giornale per tema, riconoscere una specie animale da una foto.</p>\n<p>Il modello produce un vettore di $K$ probabilità $[\\hat{p}_1, \\ldots, \\hat{p}_K]$ con $\\sum_k \\hat{p}_k = 1$ tramite la funzione <strong>softmax</strong>. La classe predetta è $\\hat{y} = \\arg\\max_k \\hat{p}_k$. La loss è la <em>categorical cross-entropy</em>.</p>\n<p>Due strategie per adattare classificatori binari al caso multi-classe:</p>\n<ul>\n<li><strong>One-vs-Rest (OvR)</strong>: per ogni classe $k$, allena un classificatore binario \"classe $k$ vs tutte le altre\". Produce $K$ modelli.</li>\n<li><strong>One-vs-One (OvO)</strong>: allena un classificatore binario per ogni coppia di classi. Produce $K(K-1)/2$ modelli.</li>\n</ul>\n\n<h4>Classificazione multi-label &mdash; più etichette per esempio</h4>\n<p>Un esempio può appartenere a <strong>più classi contemporaneamente</strong>. Esempi: un'immagine contiene sia un cane che una macchina; una canzone è rock, live e anni-'90 allo stesso tempo; un articolo riguarda sia economia che politica estera.</p>\n<p><strong>Attenzione: non è multi-classe.</strong> In multi-classe le etichette si escludono (una sola classe per esempio); in multi-label no. Si tratta tipicamente come $K$ classificatori binari indipendenti, uno per etichetta, ognuno con la propria soglia.</p>\n\n<h4>Classificazione ordinale</h4>\n<p>Le classi hanno un ordine naturale ma non una distanza numerica precisa. Esempi: rating 1-5 stelle, grado di malattia (lieve/moderato/grave), livello di accordo in una survey. Non è né classificazione pura né regressione: trattarla come regressione è approssimativo ma spesso funziona; esistono metodi dedicati (ordinal regression, threshold models).</p>\n\n<h3>1.5 Formalizzazione dell'apprendimento supervisionato</h3>\n<p>Assumiamo che i dati provengano da una distribuzione congiunta ignota $\\mathcal{D}$ su $\\mathcal{X} \\times \\mathcal{Y}$. Data una funzione di loss $\\ell(\\hat{y}, y)$, definiamo il <em>rischio atteso</em>:</p>\n<p>$$R(f) = \\mathbb{E}_{(x,y) \\sim \\mathcal{D}}\\left[\\ell(f(x), y)\\right]$$</p>\n<p>Non conosciamo $\\mathcal{D}$, quindi minimizziamo il <em>rischio empirico</em> su un training set $\\{(x_i, y_i)\\}_{i=1}^n$:</p>\n<p>$$\\hat{R}(f) = \\frac{1}{n}\\sum_{i=1}^n \\ell(f(x_i), y_i)$$</p>\n<p>Il grande tema del ML è: quando il minimo di $\\hat{R}$ è vicino al minimo di $R$? Questa è la questione della <em>generalizzazione</em>.</p>\n\n<h3>1.6 Bias-Variance Tradeoff</h3>\n<p>Ogni modello commette errori. L'errore atteso su un punto $x$, mediato su tutti i possibili training set di dimensione $n$ campionati da $\\mathcal{D}$, si decompone esattamente in tre termini:</p>\n<p>$$\\mathbb{E}\\left[(f(x) - y)^2\\right] = \\underbrace{\\left(\\mathbb{E}[f(x)] - y^*\\right)^2}_{\\text{Bias}^2} + \\underbrace{\\mathbb{E}\\left[(f(x) - \\mathbb{E}[f(x)])^2\\right]}_{\\text{Varianza}} + \\underbrace{\\sigma^2_\\epsilon}_{\\text{Rumore}}$$</p>\n<p>dove $y^* = \\mathbb{E}[y|x]$ è il valore vero (la funzione da imparare) e $\\sigma^2_\\epsilon$ è il rumore irriducibile dei dati.</p>\n<ul>\n<li><strong>Bias elevato</strong>: il modello è sistematicamente sbagliato, troppo semplice per catturare il pattern reale &rarr; <em>underfitting</em>. Es: fittare una retta su dati parabolici.</li>\n<li><strong>Varianza elevata</strong>: il modello varia molto al variare del training set, memorizza il rumore invece del pattern &rarr; <em>overfitting</em>. Es: polinomio grado 15 su 10 punti.</li>\n<li><strong>Rumore irriducibile</strong> $\\sigma^2_\\epsilon$: errore intrinseco dei dati (misurazione imprecisa, variabilità naturale). Non eliminabile con nessun modello.</li>\n</ul>\n<p>Il <em>tradeoff</em>: aumentare la complessità del modello riduce il bias ma aumenta la varianza. Il punto ottimale minimizza la somma. Strumenti pratici: la <strong>regolarizzazione</strong> riduce la varianza penalizzando i parametri grandi; <strong>più dati</strong> riducono la varianza; un <strong>modello più espressivo</strong> riduce il bias.</p>\n\n<h3>1.7 Lo spazio delle ipotesi e la capacità</h3>\n<p>Quando scegliamo una famiglia di modelli (rette, alberi, reti neurali...) stiamo scegliendo uno <strong>spazio delle ipotesi</strong> $\\mathcal{H}$. L'algoritmo di apprendimento cerca:</p>\n<p>$$f^* = \\arg\\min_{f \\in \\mathcal{H}} \\hat{R}(f)$$</p>\n<p>La <em>capacità</em> (o complessità) di $\\mathcal{H}$ determina il tradeoff bias-varianza:</p>\n<ul>\n<li>$\\mathcal{H}$ ristretto (es. solo rette): alto bias, bassa varianza.</li>\n<li>$\\mathcal{H}$ ampio (es. polinomi di grado alto, reti neurali profonde): basso bias potenziale, alta varianza se non regolarizzato.</li>\n</ul>\n<p>Misure formali della capacità: <em>dimensione VC</em>, <em>Rademacher complexity</em>. Non richieste in questo corso, ma utile sapere che la teoria del ML studia formalmente quando la minimizzazione del rischio empirico garantisce la generalizzazione.</p>\n\n<h3>1.8 Terminologia essenziale</h3>\n<ul>\n<li><strong>Feature</strong> (o predittore, variabile indipendente): una componente di $x$.</li>\n<li><strong>Label</strong> (o target, variabile dipendente): $y$.</li>\n<li><strong>Modello</strong>: la funzione $f_\\theta$ parametrizzata da $\\theta$.</li>\n<li><strong>Iperparametro</strong>: parametro scelto prima del training, non appreso dai dati (es. grado del polinomio, soglia di classificazione, numero di alberi).</li>\n<li><strong>Training</strong>: il processo di trovare $\\theta$ ottimale minimizzando $\\hat{R}$.</li>\n<li><strong>Inference</strong>: usare il modello addestrato per fare previsioni su nuovi dati.</li>\n<li><strong>Overfitting</strong>: il modello memorizza il training set ma non generalizza. $\\hat{R}$ piccolo, $R$ grande. Alta varianza.</li>\n<li><strong>Underfitting</strong>: il modello è troppo semplice per catturare il pattern. Sia $\\hat{R}$ che $R$ grandi. Alto bias.</li>\n<li><strong>Generalizzazione</strong>: capacità di performare bene su dati nuovi, non visti durante il training.</li>\n<li><strong>Dataset split</strong>: <em>training set</em> (addestrare i parametri), <em>validation set</em> (scegliere iperparametri e confrontare modelli), <em>test set</em> (stimare la performance reale &mdash; usato UNA volta sola alla fine).</li>\n</ul>\n"
     },
     {
       "type": "callout",
       "variant": "note",
       "title": "Analogia con la fisica",
-      "content": "Overfitting è come fittare un polinomio di grado 20 su 10 punti sperimentali: passi per tutti i punti ma il modello non ha significato fisico. Il bias-variance tradeoff che vedremo dopo è essenzialmente la stessa questione della scelta del grado del polinomio, generalizzata."
+      "content": "Overfitting è come fittare un polinomio di grado 20 su 10 punti sperimentali: passi per tutti i punti ma il modello non ha significato fisico. Il bias-variance tradeoff (sezione 1.6) è la formalizzazione matematica di questa intuizione: la complessità ottimale bilancia errore sistematico e sensibilità al campione."
+    },
+    {
+      "type": "callout",
+      "variant": "tip",
+      "title": "Classificazione: binaria vs multi-classe vs multi-label",
+      "content": "Regola pratica — conta le classi e chiedi se un esempio può averne più di una. Due classi esclusive → binaria. Più di due classi esclusive → multi-classe. Più etichette per esempio → multi-label. Ordine ma non metrica → ordinale. Queste distinzioni cambiano loss, metriche e architettura del modello."
     }
   ],
   "esempi": [
@@ -32,6 +38,30 @@ window.LESSONS.push({
     {
       "type": "run",
       "content": "from sklearn.datasets import make_classification\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\n\nX, y = make_classification(n_samples=200, n_features=2, n_informative=2,\n                            n_redundant=0, random_state=42)\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.3, random_state=42)\n\nclf = LogisticRegression()\nclf.fit(X_tr, y_tr)\n\nprint(f\"Accuracy training: {clf.score(X_tr, y_tr):.3f}\")\nprint(f\"Accuracy test:     {clf.score(X_te, y_te):.3f}\")\nprint(\"Prima predizione:\", clf.predict(X_te[:1]), \"vera:\", y_te[:1])"
+    },
+    {
+      "type": "md",
+      "content": "<h3>Esempio: classificazione multi-classe (Iris, K=3)</h3><p>Il dataset Iris ha 3 specie (classi). Il modello produce 3 probabilità che sommano a 1 via softmax. Notiamo come l'accuracy da sola non è sempre sufficiente: stampiamo anche il report completo per classe.</p>"
+    },
+    {
+      "type": "run",
+      "content": "from sklearn.datasets import load_iris\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.metrics import classification_report\nimport numpy as np\n\nX, y = load_iris(return_X_y=True)\nnomi_classi = ['setosa', 'versicolor', 'virginica']\n\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.3, random_state=0, stratify=y)\nclf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))\nclf.fit(X_tr, y_tr)\n\nprob = clf.predict_proba(X_te)\nprint('Esempio: probabilità per primo campione del test:')\nfor nome, p in zip(nomi_classi, prob[0]):\n    print(f'  {nome}: {p:.3f}')\nprint(f'Predizione: {nomi_classi[clf.predict(X_te[:1])[0]]}  |  Vera: {nomi_classi[y_te[0]]}')\nprint()\nprint(classification_report(y_te, clf.predict(X_te), target_names=nomi_classi))"
+    },
+    {
+      "type": "md",
+      "content": "<h3>Esempio: multi-label &mdash; un'immagine ha più etichette</h3><p>Simuliamo tag cinematografici: un film può essere contemporaneamente 'azione', 'commedia', 'dramma'. Non si escludono. Usiamo un classificatore binario per ogni etichetta.</p>"
+    },
+    {
+      "type": "run",
+      "content": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.multioutput import MultiOutputClassifier\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import classification_report\n\nnp.random.seed(42)\nn = 400\n# feature: ritmo, umorismo, intensita_emotiva\nX = np.random.randn(n, 3)\n# etichette multi-label: azione, commedia, dramma\nazione   = (X[:,0] > 0.2).astype(int)\ncommedia = (X[:,1] > 0.3).astype(int)\ndramma   = (X[:,2] > 0.1).astype(int)\nY = np.column_stack([azione, commedia, dramma])\n\nprint('Film con piu di una etichetta:', (Y.sum(axis=1) > 1).sum(), '/', n)\nprint('Distribuzione etichette: azione', azione.mean():.2f,\n      'commedia', commedia.mean():.2f, 'dramma', dramma.mean():.2f)\n\nX_tr, X_te, Y_tr, Y_te = train_test_split(X, Y, test_size=0.3, random_state=0)\n# un LogisticRegression per ogni colonna di Y\nmodel = MultiOutputClassifier(LogisticRegression()).fit(X_tr, Y_tr)\nY_pred = model.predict(X_te)\nfor i, tag in enumerate(['azione', 'commedia', 'dramma']):\n    from sklearn.metrics import f1_score\n    f1 = f1_score(Y_te[:,i], Y_pred[:,i])\n    print(f'{tag:10s}: F1 = {f1:.3f}')"
+    },
+    {
+      "type": "md",
+      "content": "<h3>Esempio: bias-variance tradeoff visivo</h3><p>Stessa funzione, stessi punti, polinomi di grado crescente. Osserva come MSE train scende sempre, mentre MSE test ha un minimo: questo è il punto di bias-varianza ottimale.</p>"
+    },
+    {
+      "type": "run",
+      "content": "import numpy as np\nimport matplotlib.pyplot as plt\n\nnp.random.seed(7)\nx_tr = np.linspace(0, 1, 12)\ny_tr = np.sin(2*np.pi*x_tr) + 0.15*np.random.randn(12)\nx_te = np.linspace(0, 1, 200)\ny_te = np.sin(2*np.pi*x_te)\n\ngradi = range(1, 13)\nmse_tr, mse_te = [], []\nfor g in gradi:\n    c = np.polyfit(x_tr, y_tr, g)\n    mse_tr.append(np.mean((np.polyval(c, x_tr) - y_tr)**2))\n    mse_te.append(np.mean((np.polyval(c, x_te) - y_te)**2))\n\nplt.figure(figsize=(8,4))\nplt.plot(list(gradi), mse_tr, 'o-', label='MSE train')\nplt.plot(list(gradi), mse_te, 's-', label='MSE test')\nplt.axvline(x=np.argmin(mse_te)+1, color='gray', linestyle='--', label=f'ottimo grado={np.argmin(mse_te)+1}')\nplt.xlabel('Grado polinomio'); plt.ylabel('MSE'); plt.title('Bias-Variance Tradeoff')\nplt.ylim(0, min(max(mse_te)*1.5, 2)); plt.legend(); plt.grid(alpha=0.3)\nplt.tight_layout(); plt.show()\nprint(f'Grado ottimo: {np.argmin(mse_te)+1}, MSE test min: {min(mse_te):.4f}')\nprint(f'Grado 1  (alto bias):    MSE test = {mse_te[0]:.4f}')\nprint(f'Grado 11 (alta varianza): MSE test = {mse_te[10]:.4f}')"
     }
   ],
   "esercizi": [
@@ -80,7 +110,7 @@ window.LESSONS.push({
             "Semi-supervisionato"
           ],
           "answer": 1,
-          "explain": "Non ci sono etichette, cerchiamo struttura: clustering, non supervisionato."
+          "explain": "Non ci sono etichette, cerchiamo struttura latente: clustering, tipico del non supervisionato."
         },
         {
           "q": "Il rischio empirico $\\hat{R}$ è:",
@@ -91,18 +121,62 @@ window.LESSONS.push({
             "La varianza delle predizioni"
           ],
           "answer": 2,
-          "explain": "Per definizione, $\\hat{R} = \\frac{1}{n}\\sum_i \\ell(f(x_i), y_i)$ sul training set."
+          "explain": "Per definizione, $\\hat{R} = \\frac{1}{n}\\sum_i \\ell(f(x_i), y_i)$ sul training set. Il rischio atteso $R$ è la stessa quantità ma sotto la distribuzione vera ignota."
         },
         {
           "q": "Un modello con training accuracy 99% e test accuracy 60% è tipicamente:",
           "options": [
-            "Underfit",
-            "Overfit",
+            "Underfit (alto bias)",
+            "Overfit (alta varianza)",
             "Ben calibrato",
-            "Non identificabile"
+            "Ottimamente regolarizzato"
           ],
           "answer": 1,
-          "explain": "Grande gap train-test è la firma dell'overfitting."
+          "explain": "Grande gap train-test è la firma dell'overfitting (alta varianza): il modello memorizza il training set invece di generalizzare."
+        },
+        {
+          "q": "Un'immagine è etichettata come 'gatto' E 'esterno' E 'notturna'. Che tipo di problema è?",
+          "options": [
+            "Classificazione multi-classe",
+            "Classificazione multi-label",
+            "Classificazione binaria ripetuta",
+            "Regressione ordinale"
+          ],
+          "answer": 1,
+          "explain": "Più etichette non esclusive sullo stesso esempio → multi-label. In multi-classe ogni esempio ha ESATTAMENTE una classe."
+        },
+        {
+          "q": "Il numero di neuroni in uno strato nascosto di una rete è:",
+          "options": [
+            "Un parametro appreso durante il training",
+            "Un iperparametro scelto prima del training",
+            "Sempre uguale al numero di feature",
+            "Determinato automaticamente dai dati"
+          ],
+          "answer": 1,
+          "explain": "I parametri (pesi, bias) sono appresi durante il training. Gli iperparametri (architettura, learning rate, regolarizzazione) si scelgono prima e tipicamente via validation set o cross-validation."
+        },
+        {
+          "q": "Nella decomposizione bias-varianza, il 'rumore irriducibile' $\\sigma^2_\\epsilon$:",
+          "options": [
+            "Si elimina con un modello più complesso",
+            "Si elimina con più dati",
+            "Non si può ridurre con nessun modello",
+            "È uguale al bias al quadrato"
+          ],
+          "answer": 2,
+          "explain": "$\\sigma^2_\\epsilon$ è l'errore intrinseco dei dati (misurazioni imprecise, variabilità naturale del fenomeno). Nessun algoritmo può fare meglio del 'bayes error' fissato da questo rumore."
+        },
+        {
+          "q": "Nella classificazione binaria, la soglia $\\tau = 0.5$ è:",
+          "options": [
+            "Un parametro appreso durante il training con la cross-entropy",
+            "Un iperparametro che si può cambiare in base al costo dei falsi positivi/negativi",
+            "Sempre la scelta ottimale",
+            "Fissata dalla funzione softmax"
+          ],
+          "answer": 1,
+          "explain": "La soglia non è appresa: si sceglie dopo il training sul validation set. Se i falsi negativi sono più costosi (es. diagnosi medica), conviene abbassarla per aumentare il recall."
         },
         {
           "q": "Nella regressione lineare $y = wx + b$, i parametri appresi sono:",
@@ -113,7 +187,7 @@ window.LESSONS.push({
             "$x$ e $y$"
           ],
           "answer": 2,
-          "explain": "$x, y$ sono i dati (fissi); $w, b$ sono i parametri da apprendere."
+          "explain": "$x$ e $y$ sono i dati (fissi); $w$ (peso) e $b$ (bias/intercetta) sono i parametri da apprendere minimizzando l'MSE."
         }
       ]
     },

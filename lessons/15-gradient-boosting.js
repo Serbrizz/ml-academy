@@ -95,6 +95,73 @@ window.LESSONS.push({
 </ul>
 ` },
     { type: 'callout', variant: 'tip', title: 'Regola pratica', content: 'Per un nuovo problema tabulare, il baseline è: standardizzare, LogisticRegression (o Ridge per regressione). Poi HistGradientBoosting con default. Se il boosting non batte la lineare del 5%+, hai un problema (o è un problema facile). Poi tuning serio del boosting.' },
+    { type: 'md', content: `
+<h3>15.11 Derivazione dei pseudo-residui</h3>
+<p>Il meccanismo centrale del gradient boosting: ogni albero non impara $y$, ma il <strong>gradiente negativo della loss</strong> rispetto alle predizioni correnti $F_{m-1}(x)$.</p>
+<p><strong>Inizializzazione:</strong> $F_0(x) = \\bar{y}$ (media di $y$ per MSE; $\\log\\frac{p}{1-p}$ della frequenza di classe per log-loss).</p>
+<p><strong>Ad ogni step $m$:</strong></p>
+<ol>
+<li>Calcola i pseudo-residui per ogni esempio $i$:
+$$r_i^{(m)} = -\\frac{\\partial \\mathcal{L}(y_i,\\, F_{m-1}(x_i))}{\\partial F_{m-1}(x_i)}$$</li>
+<li>Fitta un albero $h_m$ sui coppie $\\{(x_i,\\, r_i^{(m)})\\}$.</li>
+<li>Aggiorna: $F_m(x) = F_{m-1}(x) + \\eta \\cdot h_m(x)$.</li>
+</ol>
+<p><strong>Perché "pseudo-residuo"?</strong> Per MSE, $\\mathcal{L} = \\frac{1}{2}(y-F)^2$:</p>
+<p>$$r_i = -\\frac{\\partial}{\\partial F}\\frac{1}{2}(y_i - F)^2 = y_i - F_{m-1}(x_i)$$</p>
+<p>Sono i <em>residui classici</em>: l'albero impara quanto il modello corrente sbaglia. Per log-loss (classificazione binaria), $\\mathcal{L} = -[y\\log\\sigma(F) + (1-y)\\log(1-\\sigma(F))]$:</p>
+<p>$$r_i = y_i - \\sigma(F_{m-1}(x_i))$$</p>
+<p>Differenza tra target e probabilità predetta — intuitivo. Il <strong>functional gradient descent</strong>: invece di aggiornare i parametri di un modello fisso, ad ogni step <em>aggiungiamo una nuova funzione</em> $h_m$ che approssima il gradiente. Il modello cresce iterativamente nello spazio delle funzioni.</p>
+
+<h3>15.12 Feature importance a confronto</h3>
+<p>Tre misure con bias molto diversi — scegliere la giusta cambia le conclusioni:</p>
+<ul>
+<li><strong>Gain (impurity-based):</strong> somma del guadagno di impurità (riduzione MSE o Gini) su tutti gli split che usano quella feature. Rapida da calcolare, ma <em>favorisce feature ad alta cardinalità</em>: con 1000 valori distinti ci sono più threshold da provare che con una feature binaria.</li>
+<li><strong>Cover:</strong> numero totale di campioni coperti dagli split su quella feature. Simile a Gain, stesso bias strutturale.</li>
+<li><strong>Frequency:</strong> quante volte la feature appare negli split, senza pesare per il guadagno. La più biased verso feature molto usate.</li>
+</ul>
+<p><strong>Permutation importance</strong> (model-agnostic, meno distorta):</p>
+<ol>
+<li>Calcola la metrica di baseline $S$ sul validation set.</li>
+<li>Per la feature $j$: permuta casualmente i valori di $X_j$ nel validation set, rompendo la relazione con $y$.</li>
+<li>Ricalcola la metrica $S_j^{\\text{perm}}$.</li>
+<li>Importanza di $j$ = $S - S_j^{\\text{perm}}$: quanto cade la performance.</li>
+</ol>
+<p>Non è distorta dalla cardinalità. Costo: $O(p)$ forward pass aggiuntivi. Disponibile in sklearn con <code class="inline">permutation_importance</code>.</p>
+<p><strong>SHAP:</strong> decompone ogni predizione in contributi additivi per feature: $\\hat{y}_i = E[\\hat{y}] + \\sum_j \\phi_{ij}$. Soddisfa tre assiomi: <em>efficienza</em> (i contributi sommano alla predizione), <em>simmetria</em> (feature identiche → contributi identici), <em>dummy</em> (feature irrilevante → contributo zero). Il gold standard teorico, basato sugli Shapley values della teoria dei giochi cooperativi.</p>
+
+<h3>15.13 SHAP values: intuitivamente</h3>
+<p>SHAP risponde a: <em>"quanto ha contribuito la feature $j$ alla deviazione di $\\hat{y}_i$ dalla media $E[\\hat{y}]$?"</em></p>
+<p><strong>Additività:</strong> $\\hat{y}_i = E[\\hat{y}] + \\sum_{j=1}^p \\phi_{ij}$, dove $\\phi_{ij}$ è il contributo SHAP della feature $j$ per l'esempio $i$.</p>
+<p><strong>Calcolo formale (Shapley value):</strong> considera tutti i possibili <em>ordini</em> in cui le feature potrebbero "entrare" nel modello. Per ogni ordine, misura il contributo marginale di $j$ quando entra. $\\phi_j$ è la media pesata su tutti i $p!$ ordini:</p>
+<p>$$\\phi_j = \\sum_{S \\subseteq F \\setminus \\{j\\}} \\frac{|S|!\\,(|F|-|S|-1)!}{|F|!} \\left[v(S \\cup \\{j\\}) - v(S)\\right]$$</p>
+<p>Dove $S$ è un sottoinsieme di feature e $v(S)$ è la predizione del modello usando solo le feature in $S$ (le altre integrate via loro distribuzione marginale).</p>
+<p><strong>TreeSHAP:</strong> questo calcolo è esponenziale in generale ($O(2^p)$), ma per alberi può essere fatto esattamente in $O(T \\cdot L^2)$ dove $T$ = numero di alberi, $L$ = numero massimo di foglie. Implementato nativamente in XGBoost, LightGBM, e scikit-learn ≥ 1.3.</p>
+<p>Usi pratici: importanza globale (media $|\\phi_j|$ su tutti gli esempi), beeswarm plot per vedere la distribuzione, waterfall plot per spiegare una singola predizione al management.</p>
+
+<h3>15.14 LightGBM: histogram-based split finding</h3>
+<p>Il bottleneck classico del gradient boosting è trovare il miglior split: per ogni feature, ordini i $n$ valori ($O(n\\log n)$) e scansioni tutti i possibili threshold ($O(n \\cdot p)$ totale). Con $n = 10^6$ e $p = 100$ diventa un problema.</p>
+<p><strong>Idea core di LightGBM:</strong> discretizza ogni feature in $B$ bin (default: $B = 256$) costruendo un istogramma. Poi:</p>
+<ol>
+<li><strong>Pre-processing (una volta sola):</strong> mappa ogni valore di feature in un intero $\\in [0, B-1]$.</li>
+<li><strong>Per ogni nodo da splittare:</strong> costruisci l'istogramma dei gradienti sommati per bin — costo $O(n)$.</li>
+<li><strong>Trova lo split ottimale</strong> scansionando solo $B$ soglie invece di $n$ — costo $O(B)$ invece di $O(n)$.</li>
+</ol>
+<p>Con $n = 10^6$ e $B = 256$: riduzione $\\approx 4000\\times$ nella fase di split finding.</p>
+<p><strong>GOSS (Gradient-based One-Side Sampling):</strong> i campioni con gradiente piccolo hanno già bassa loss e contribuiscono poco alla scelta dello split. LightGBM mantiene tutti i campioni con gradiente alto, sottocampiona aggressivamente quelli con gradiente basso, e compensa con un fattore di peso. Riduce il dataset effettivo di 10-20× senza perdita significativa di accuratezza.</p>
+<p>Risultato pratico: LightGBM è 10-100× più veloce di XGBoost naïve a parità di accuratezza, e gestisce dataset da milioni di righe su macchine normali.</p>
+
+<h3>15.15 Learning rate vs n_estimators: il tradeoff</h3>
+<p>$\\eta$ piccolo + molti alberi $\\approx$ $\\eta$ grande + pochi alberi in termini di <strong>bias</strong>. Ma la differenza in <strong>varianza</strong> (generalizzazione) è sostanziale:</p>
+<ul>
+<li><strong>$\\eta$ piccolo (shrinkage forte):</strong> ogni albero contribuisce solo $\\eta \\cdot h_m$. I primi alberi non "fissano" rigidamente la struttura — c'è più spazio per correzioni future. Maggiore regolarizzazione implicita.</li>
+<li><strong>$\\eta$ grande:</strong> i primi alberi dominano il modello finale. I successivi correggono solo dettagli. Meno regolarizzazione, overfitting più probabile con dati rumorosi.</li>
+</ul>
+<p><strong>Shrinkage come regolarizzazione temporale:</strong> l'aggiornamento $F_m = F_{m-1} + \\eta h_m$ con $\\eta$ piccolo è simile a L2 applicata ad ogni passo: riduce la magnitudine di ogni contributo, riducendo la dominanza dei primi alberi.</p>
+<p><strong>Regola pratica:</strong> imposta $\\eta = 0.01$–$0.1$ e usa <code class="inline">early_stopping=True</code> con <code class="inline">max_iter</code> alto (2000–5000). L'early stopping trova automaticamente il numero ottimale di alberi. Studi empirici (Friedman 2001; Chen &amp; Guestrin 2016) mostrano che $\\eta \\leq 0.1$ con early stopping batte quasi sempre configurazioni con $\\eta &gt; 0.3$, specialmente su dati con rumore.</p>
+<p>Non tunare $\\eta$ e $n_{\\text{estimators}}$ insieme: sono fortemente correlati e lo spazio di ricerca è ridondante. Fissa $\\eta$ (es. 0.05) e trova $n_{\\text{estimators}}$ via early stopping.</p>
+` },
+    { type: 'callout', variant: 'tip', title: 'SHAP in pratica: installazione', content: 'pip install shap. Poi: import shap; explainer = shap.TreeExplainer(model); shap_values = explainer.shap_values(X_test). Per XGBoost/LightGBM/sklearn GBT, TreeSHAP è esatto e veloce. shap.summary_plot(shap_values, X_test) dà il beeswarm plot globale in una riga.' },
+    { type: 'callout', variant: 'warn', title: 'Gain importance: non fidarti ciecamente', content: 'La feature importance "Gain" di XGBoost/LightGBM è biased verso feature ad alta cardinalità (es. ID, timestamp, valori continui con molte cifre). Se hai dubbi su quali feature siano davvero utili, usa sempre permutation importance o SHAP — sono più affidabili e meno influenzati dalla struttura del dato.' },
   ],
   esempi: [
     { type: 'md', content: '<h3>Esempio 1: GBM vs Random Forest vs modello lineare</h3>' },
