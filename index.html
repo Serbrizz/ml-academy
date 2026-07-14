@@ -14,8 +14,6 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<button id="mobile-menu-toggle" aria-label="Menu" title="Menu">☰</button>
-<div id="sidebar-overlay"></div>
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
@@ -51,17 +49,7 @@
     <nav id="lesson-list"></nav>
 
     <div class="sidebar-footer">
-      <div class="mode-toggle-row">
-        <label class="mode-toggle" title="Modalità mobile: layout ottimizzato per smartphone">
-          <input type="checkbox" id="mobile-mode-toggle" />
-          <span class="mode-slider"></span>
-          <span class="mode-label">Modalità mobile</span>
-        </label>
-      </div>
-      <label class="readonly-toggle" title="Nasconde gli editor di codice, mostra solo teoria ed esempi renderizzati">
-        <input type="checkbox" id="readonly-toggle" />
-        <span>Sola lettura (nasconde editor)</span>
-      </label>
+      <button id="theme-toggle" title="Cambia tema">🌙</button>
       <div id="pyodide-status">Python: <span id="pyodide-state">non caricato</span></div>
       <button id="reset-all" title="Azzera tutto (progressi, note, streak)">Reset dati</button>
     </div>

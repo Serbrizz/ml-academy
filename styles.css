@@ -15,6 +15,36 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
+
+body.light-mode {
+  --bg: #f4f5f9;
+  --panel: #ffffff;
+  --panel-2: #eef0f7;
+  --border: #d0d4e8;
+  --text: #1a1d2e;
+  --muted: #6b7194;
+  --accent: #6244e8;
+  --accent-2: #0d9e8a;
+  --danger: #d93025;
+  --success: #1e8c4e;
+  --warn: #b07c00;
+  --fire: #c96400;
+  --code-bg: #f0f1f8;
+  color-scheme: light;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+#theme-toggle:hover { background: var(--panel-2); }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 a { color: var(--accent-2); text-decoration: none; }
@@ -146,246 +176,8 @@ code.inline { background: var(--panel); padding: 2px 6px; border-radius: 4px; fo
 .run-btn:hover { background: #6b4bff; }
 .run-btn:disabled { background: var(--panel-2); color: var(--muted); cursor: not-allowed; }
 .reset-btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-.check-btn { background: var(--accent-2); color: #082c25; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font
-/* ============================================================
-   MODE TOGGLES - modalità mobile attivabile a mano
-   ============================================================ */
-
-/* Hamburger button - nascosto di default (visibile solo in mobile mode) */
-#mobile-menu-toggle {
-  display: none;
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-#mobile-menu-toggle:active { background: var(--panel-2); }
-
-/* Overlay per chiudere sidebar tappando fuori */
-#sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 998;
-}
-
-/* Toggle switch nella sidebar */
-.mode-toggle-row { margin-bottom: 10px; }
-.mode-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  padding: 6px 0;
-  font-size: 12px;
-  color: var(--text);
-}
-.mode-toggle input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  margin: 0;
-}
-.mode-slider {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-.mode-slider::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  background: var(--muted);
-  border-radius: 50%;
-  transition: transform 0.2s, background 0.2s;
-}
-.mode-toggle input:checked + .mode-slider { background: var(--accent); }
-.mode-toggle input:checked + .mode-slider::before {
-  transform: translateX(16px);
-  background: white;
-}
-.readonly-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 4px 0;
-  margin-bottom: 8px;
-}
-.readonly-toggle input { cursor: pointer; }
-
-/* ============================================================
-   MOBILE MODE - attiva quando body ha class="mobile-mode"
-   ============================================================ */
-
-body.mobile-mode #mobile-menu-toggle { display: block !important; }
-
-body.mobile-mode #app {
-  grid-template-columns: 1fr !important;
-}
-
-body.mobile-mode #sidebar {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 85% !important;
-  max-width: 320px !important;
-  height: 100vh !important;
-  z-index: 999 !important;
-  transform: translateX(-100%) !important;
-  transition: transform 0.25s ease !important;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
-}
-
-body.mobile-mode.sidebar-open #sidebar {
-  transform: translateX(0) !important;
-}
-body.mobile-mode.sidebar-open #sidebar-overlay {
-  display: block !important;
-}
-
-body.mobile-mode #content {
-  padding: 60px 16px 60px !important;
-  max-width: 100% !important;
-}
-
-body.mobile-mode #lesson-title { font-size: 22px; }
-body.mobile-mode .tab-panel h3 { font-size: 18px; }
-body.mobile-mode .tab-panel h4 { font-size: 15px; }
-body.mobile-mode .tab-panel p, body.mobile-mode .tab-panel li { font-size: 15px; line-height: 1.6; }
-
-/* Editor più grande e touch-friendly */
-body.mobile-mode .code-editor {
-  min-height: 180px;
-  font-size: 14px;
-  padding: 12px;
-}
-body.mobile-mode .code-toolbar {
-  flex-wrap: wrap;
-  gap: 6px;
-}
-body.mobile-mode .code-toolbar button {
-  min-height: 44px;
-  padding: 10px 14px;
-  font-size: 14px;
-  flex: 1 1 auto;
-  min-width: 90px;
-}
-body.mobile-mode .saved-badge { width: 100%; text-align: center; padding: 4px 0; }
-
-/* Bottone Tab per mobile (inserito da JS) */
-.tab-btn-mobile {
-  background: var(--panel-2);
-  color: var(--accent-2);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  min-height: 44px;
-  font-family: var(--mono);
-  font-weight: bold;
-}
-
-/* Tabs delle lezioni scrollabili orizzontalmente in mobile */
-body.mobile-mode .tabs {
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-body.mobile-mode .tab-btn {
-  flex-shrink: 0;
-  padding: 12px 14px;
-  font-size: 14px;
-}
-
-/* Home cards a colonna singola su mobile */
-body.mobile-mode .home-grid { grid-template-columns: 1fr; }
-body.mobile-mode .dashboard-row { grid-template-columns: 1fr; }
-body.mobile-mode .stats-grid { grid-template-columns: repeat(2, 1fr); }
-body.mobile-mode .contrib-graph { grid-template-columns: repeat(15, 16px); }
-body.mobile-mode .contrib-day { width: 16px; height: 16px; }
-
-/* Streak box più compatto */
-body.mobile-mode .streak-box { padding: 8px 12px; }
-
-/* Bottoni navigazione lezione impilati */
-body.mobile-mode #lesson-nav {
-  flex-direction: column;
-  gap: 8px;
-}
-body.mobile-mode #lesson-nav button {
-  width: 100%;
-  min-height: 46px;
-  font-size: 15px;
-}
-body.mobile-mode #mark-complete { margin-left: 0 !important; }
-
-/* Home cards touch friendly */
-body.mobile-mode .home-card { padding: 20px; }
-body.mobile-mode .home-card h3 { font-size: 17px; }
-
-/* Quiz options più grandi */
-body.mobile-mode .quiz-option {
-  padding: 14px;
-  font-size: 14px;
-  min-height: 48px;
-}
-
-/* PDF viewer più touch friendly */
-body.mobile-mode .pdf-viewer-header { flex-wrap: wrap; }
-body.mobile-mode .pdf-page-nav button { min-height: 40px; padding: 8px 12px; }
-
-/* Notes area più grande */
-body.mobile-mode .notes-textarea { min-height: 180px; font-size: 15px; }
-
-/* Global search più touch friendly */
-body.mobile-mode #global-search { min-height: 44px; font-size: 15px; }
-
-/* ============================================================
-   READ-ONLY MODE - nasconde gli editor di codice
-   ============================================================ */
-body.readonly-mode .code-runner .code-editor,
-body.readonly-mode .code-runner .code-toolbar {
-  display: none;
-}
-body.readonly-mode .exercise .reveal-btn { display: inline-block; }
-body.readonly-mode .code-runner::before {
-  content: "📖 Modalità sola lettura attiva. Disattiva l\'interruttore per scrivere codice.";
-  display: block;
-  padding: 10px;
-  background: var(--panel);
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-  margin-bottom: 6px;
-}
-body.readonly-mode .code-runner .code-output { display: none; }
-ccent); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
+.check-btn { background: var(--accent-2); color: #082c25; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; }
+.print-btn { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
 .print-btn:hover { background: #6b4bff; }
 
 @media print {
@@ -433,43 +225,10 @@ ccent); color: white; border: none; padding: 10px 18px; border-radius: 6px; curs
 
 /* Responsive */
 @media (max-width: 900px) {
-  #mobile-menu-toggle { display: block !important; }
-
-  #app { grid-template-columns: 1fr !important; }
-
-  #sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 85% !important;
-    max-width: 320px !important;
-    height: 100vh !important;
-    z-index: 999 !important;
-    transform: translateX(-100%) !important;
-    transition: transform 0.25s ease !important;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
-  }
-
-  body.sidebar-open #sidebar { transform: translateX(0) !important; }
-  body.sidebar-open #sidebar-overlay { display: block !important; }
-
-  #content {
-    padding: 60px 16px 60px !important;
-    max-width: 100% !important;
-  }
-
+  #app { grid-template-columns: 1fr; }
+  #sidebar { position: static; height: auto; overflow-y: auto; }
+  #content { padding: 20px; }
   .dashboard-row { grid-template-columns: 1fr; }
-  .home-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .contrib-graph { grid-template-columns: repeat(15, 16px); }
-  .contrib-day { width: 16px; height: 16px; }
-
-  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-  .tab-btn { flex-shrink: 0; padding: 12px 14px; font-size: 14px; }
-
-  #lesson-nav { flex-direction: column; gap: 8px; }
-  #lesson-nav button { width: 100%; min-height: 46px; font-size: 15px; }
-  #mark-complete { margin-left: 0 !important; }
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
