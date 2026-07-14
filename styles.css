@@ -193,7 +193,9 @@ code.inline { background: var(--panel); padding: 2px 6px; border-radius: 4px; fo
 .mode-toggle input[type="checkbox"] {
   position: absolute;
   opacity: 0;
-  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
 }
 .mode-slider {
   position: relative;
@@ -237,35 +239,35 @@ code.inline { background: var(--panel); padding: 2px 6px; border-radius: 4px; fo
    MOBILE MODE - attiva quando body ha class="mobile-mode"
    ============================================================ */
 
-body.mobile-mode #mobile-menu-toggle { display: block; }
+body.mobile-mode #mobile-menu-toggle { display: block !important; }
 
 body.mobile-mode #app {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr !important;
 }
 
 body.mobile-mode #sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 85%;
-  max-width: 320px;
-  height: 100vh;
-  z-index: 999;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 85% !important;
+  max-width: 320px !important;
+  height: 100vh !important;
+  z-index: 999 !important;
+  transform: translateX(-100%) !important;
+  transition: transform 0.25s ease !important;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
 }
 
 body.mobile-mode.sidebar-open #sidebar {
-  transform: translateX(0);
+  transform: translateX(0) !important;
 }
 body.mobile-mode.sidebar-open #sidebar-overlay {
-  display: block;
+  display: block !important;
 }
 
 body.mobile-mode #content {
-  padding: 60px 16px 60px;
-  max-width: 100%;
+  padding: 60px 16px 60px !important;
+  max-width: 100% !important;
 }
 
 body.mobile-mode #lesson-title { font-size: 22px; }
