@@ -754,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyTheme(savedTheme === 'light');
 
   document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isLight = document.body.classList.toggle('light-mode');
+    const isLight = !document.body.classList.contains('light-mode');
     localStorage.setItem('ml_theme', isLight ? 'light' : 'dark');
     applyTheme(isLight);
   });
