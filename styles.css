@@ -433,11 +433,43 @@ ccent); color: white; border: none; padding: 10px 18px; border-radius: 6px; curs
 
 /* Responsive */
 @media (max-width: 900px) {
-  #app { grid-template-columns: 1fr; }
-  #sidebar { position: static; height: auto; overflow: visible; }
-  #lesson-list { max-height: 200px; }
-  #content { padding: 20px; }
+  #mobile-menu-toggle { display: block !important; }
+
+  #app { grid-template-columns: 1fr !important; }
+
+  #sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 85% !important;
+    max-width: 320px !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.25s ease !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
+  }
+
+  body.sidebar-open #sidebar { transform: translateX(0) !important; }
+  body.sidebar-open #sidebar-overlay { display: block !important; }
+
+  #content {
+    padding: 60px 16px 60px !important;
+    max-width: 100% !important;
+  }
+
   .dashboard-row { grid-template-columns: 1fr; }
+  .home-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .contrib-graph { grid-template-columns: repeat(15, 16px); }
+  .contrib-day { width: 16px; height: 16px; }
+
+  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .tab-btn { flex-shrink: 0; padding: 12px 14px; font-size: 14px; }
+
+  #lesson-nav { flex-direction: column; gap: 8px; }
+  #lesson-nav button { width: 100%; min-height: 46px; font-size: 15px; }
+  #mark-complete { margin-left: 0 !important; }
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }

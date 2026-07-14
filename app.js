@@ -759,6 +759,7 @@ function applyMode(prefs) {
   document.body.classList.toggle('readonly-mode', !!prefs.readonly);
 }
 
+function isMobile() { return document.body.classList.contains('mobile-mode') || window.matchMedia('(max-width: 900px)').matches; }
 function openSidebar() { document.body.classList.add('sidebar-open'); }
 function closeSidebar() { document.body.classList.remove('sidebar-open'); }
 
@@ -811,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
   search.addEventListener('keydown', e => {
     if (e.key === 'Enter' && search.value.trim()) {
       location.hash = '#/search/' + encodeURIComponent(search.value.trim());
-      if (document.body.classList.contains('mobile-mode')) closeSidebar();
+      if (isMobile()) closeSidebar();
     }
   });
 
@@ -851,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (overlay) overlay.addEventListener('click', closeSidebar);
 
   window.addEventListener('hashchange', () => {
-    if (document.body.classList.contains('mobile-mode')) closeSidebar();
+    if (isMobile()) closeSidebar();
   });
 
   if ('serviceWorker' in navigator) {
