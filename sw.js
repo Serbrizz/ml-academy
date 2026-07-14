@@ -1,6 +1,6 @@
 /* Service worker minimale per ML Academy — abilita installazione PWA e cache offline dei file dell'app */
 
-const CACHE_NAME = 'ml-academy-v6';
+const CACHE_NAME = 'ml-academy-v7';
 const APP_SHELL = [
   './',
   './index.html',

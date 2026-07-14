@@ -744,7 +744,7 @@ function router() {
 }
 
 function applyTheme(light) {
-  document.body.classList.toggle('light-mode', light);
+  document.documentElement.classList.toggle('light-mode', light);
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = light ? '☀️' : '🌙';
 }
@@ -754,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyTheme(savedTheme === 'light');
 
   document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isLight = !document.body.classList.contains('light-mode');
+    const isLight = !document.documentElement.classList.contains('light-mode');
     localStorage.setItem('ml_theme', isLight ? 'light' : 'dark');
     applyTheme(isLight);
   });

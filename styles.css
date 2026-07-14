@@ -16,7 +16,7 @@
   color-scheme: dark;
 }
 
-body.light-mode {
+html.light-mode {
   --bg: #f4f5f9;
   --panel: #ffffff;
   --panel-2: #eef0f7;
