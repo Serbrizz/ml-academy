@@ -545,7 +545,7 @@ function pageGlossary() {
     entries.filter(([k, v]) => !q || k.toLowerCase().includes(q.toLowerCase()) || v.toLowerCase().includes(q.toLowerCase()))
       .forEach(([term, def]) => {
         const item = el('div', 'glossary-item');
-        item.innerHTML = '<div class="glossary-term">' + term + '</div><div class="glossary-def">' + def + '</div>';
+        item.innerHTML = '<span class="glossary-term">' + term + ':</span> <span class="glossary-def">' + def + '</span>';
         list.appendChild(item);
       });
     renderMath(list);
