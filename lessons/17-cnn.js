@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Deep Learning',
   summary: 'Reti convoluzionali per immagini: convoluzione, pooling, architetture moderne, transfer learning. Con codice PyTorch da eseguire in locale.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Le reti neurali normali guardano ogni pixel separatamente — troppo costoso e ignora la struttura spaziale. Le CNN guardano piccole finestre dell'immagine e cercano pattern locali (bordi, curve, texture) che poi combinano in strutture sempre più complesse. Come il tuo occhio." },
+
     { type: 'md', content: `
 <h3>17.1 Perché le CNN</h3>
 <p>Se applichi un MLP a un\'immagine 224x224 RGB, il primo layer avrebbe 224*224*3 = 150.528 input, e con 1000 neuroni nel primo layer sarebbero 150 milioni di parametri solo per il primo strato. Improponibile.</p>

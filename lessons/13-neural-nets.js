@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Deep Learning',
   summary: 'Percettrone, MLP, backpropagation da zero. Ottimizzatori moderni, regolarizzazione, scelte architetturali. Base indispensabile per capire tutto il deep learning.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Neuroni artificiali collegati in strati che si passano informazioni. Ogni strato impara a riconoscere pattern sempre più astratti: il primo strato vede bordi, il secondo forme, il terzo oggetti. Nessuno li programma esplicitamente: li imparano dai dati." },
+
     { type: 'md', content: `
 <h3>13.1 Dal lineare al non lineare</h3>
 <p>La regressione logistica è un neurone singolo. Se componiamo tanti neuroni in strati con non-linearità intermedie, otteniamo un <em>Multi-Layer Perceptron</em> (MLP). Il teorema di approssimazione universale (Cybenko 1989, Hornik 1991) garantisce che un MLP con anche solo un hidden layer sufficientemente largo può approssimare qualsiasi funzione continua su un compatto.</p>

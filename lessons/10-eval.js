@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Workflow',
   summary: 'Il capitolo più importante e più bistrattato del ML. Cross-validation, metriche giuste, gestione dello sbilanciamento, calibrazione, model selection senza illusioni.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Come fai a sapere se il tuo modello è davvero bravo, o ha solo memorizzato i dati di training? Questa lezione risponde a quella domanda. Sbagliare la valutazione è l'errore più comune e più costoso nel ML applicato." },
+
     { type: 'md', content: `
 <h3>10.1 Il vero problema</h3>
 <p>La domanda a cui il ML cerca di rispondere è: <em>come funzionerà su dati mai visti?</em>. Se sbagli questa stima, tutto quello che fai dopo è teatro. Il 90% dei modelli che "sembrano ottimi ma falliscono in produzione" ha problemi di valutazione, non di modeling.</p>

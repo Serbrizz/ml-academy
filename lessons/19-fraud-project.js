@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Progetto',
   summary: 'Un progetto completo di classificazione fortemente sbilanciata: EDA, feature engineering, tuning, threshold cost-sensitive, interpretabilità, monitoring simulato.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Un progetto reale end-to-end: il fraud detection. Le frodi sono rare (1% o meno) ma costose. Il modello deve trovare quell'1% senza bloccare troppi clienti onesti. Questo implica metriche diverse, soglie diverse, e pensiero orientato al costo business." },
+
     { type: 'md', content: `
 <h3>19.1 Il problema</h3>
 <p>Le transazioni fraudolente sono rare (0.1-1% del totale) ma molto costose: una frode media di 500€, con migliaia di transazioni al giorno, sono milioni all\'anno. Un modello che riduce il tasso di frode del 10% è già un caso ROI clamoroso.</p>

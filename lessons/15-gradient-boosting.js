@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Supervisionato avanzato',
   summary: 'XGBoost, LightGBM, CatBoost. Il modello che vince l\'80% delle Kaggle su dati tabulari. Algoritmo, tuning serio, feature importance.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Costruisci tanti modelli piccoli e deboli in sequenza. Ogni modello successivo si concentra sugli esempi che il precedente aveva sbagliato. Alla fine sommi tutti: tanti modelli mediocri che si correggono a vicenda diventano un modello molto buono. Il metodo che vince le Kaggle sui dati tabulari." },
+
     { type: 'md', content: `
 <h3>15.1 Perché è importante</h3>
 <p>Sui dati tabulari (righe = esempi, colonne = feature), il <strong>gradient boosting</strong> è oggi il modello dominante. XGBoost, LightGBM e CatBoost vincono la maggior parte delle competizioni Kaggle e in industria sono lo standard per problemi come credit scoring, churn prediction, click-through rate. Anche con l'avvento del deep learning, sui tabulari il boosting resta imbattuto.</p>

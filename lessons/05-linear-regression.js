@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Supervisionato',
   summary: 'Il modello più importante da capire davvero: fondamento matematico di tutto il ML, dalle equazioni normali alla regolarizzazione al ragionamento pratico.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Trova la retta (o il piano, in più dimensioni) che passa più vicino a tutti i punti del dataset. Stai cercando la relazione lineare tra input e output. Il modello più semplice del ML, e il più importante da capire davvero." },
+
     { type: 'md', content: `
 <h3>5.1 Il modello e cosa significa "lineare"</h3>
 <p>Dato $X \\in \\mathbb{R}^{n\\times d}$ (n esempi, d feature) e $y \\in \\mathbb{R}^n$, cerchiamo:</p>

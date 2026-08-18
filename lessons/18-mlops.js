@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Produzione',
   summary: 'Come portare un modello in produzione. MLflow, FastAPI, Docker, monitoring, data drift. La differenza tra "notebook che gira" e "sistema affidabile".',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Un modello che gira su un notebook è a metà del lavoro. MLOps è l'insieme di pratiche per portarlo in produzione, tenerlo in salute, aggiornarlo quando degrada e farlo girare in modo affidabile 24/7. La differenza tra un esperimento e un prodotto." },
+
     { type: 'md', content: `
 <h3>18.1 Perché MLOps esiste</h3>
 <p>Un modello che gira su un notebook Jupyter è a metà del lavoro. Per essere davvero utile a un\'azienda deve:</p>

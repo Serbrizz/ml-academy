@@ -5,6 +5,8 @@ window.LESSONS.push({
   tag: 'Workflow',
   summary: 'La differenza tra un modello mediocre e uno vincente. Encoding categoriche, interazioni, time features, target encoding, gestione missing values, detect leakage.',
   teoria: [
+    { type: 'callout', variant: 'tip', title: "L'idea in breve", content: "Il modello è bravo quanto le informazioni che gli dai. Feature engineering è l'arte di trasformare dati grezzi in variabili utili: creare nuove colonne, codificare categorie, combinare informazioni esistenti. Spesso vale più che cambiare algoritmo." },
+
     { type: 'md', content: `
 <h3>16.1 Perché il feature engineering vince</h3>
 <p>Un vecchio detto Kaggle: "prima le feature, poi il modello". La verità operativa è che <strong>feature engineering di qualità batte quasi sempre l\'algoritmo più sofisticato</strong>. Un HistGradientBoosting con feature engineering brillante batte XGBoost con feature grezze.</p>
