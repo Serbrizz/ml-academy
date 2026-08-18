@@ -854,9 +854,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.body.classList.contains('mobile-mode')) closeSidebar();
   });
 
+  // Rimuove eventuali service worker e cache vecchi (evita problemi di cache)
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
   }
 });
